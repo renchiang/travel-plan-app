@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8" />
     <title>輕量旅遊行程 & 分帳小幫手</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <!-- Tailwind CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Vue 3 CDN -->
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <!-- Phosphor Icons -->
     <script src="https://unpkg.com/phosphor-icons"></script>
-    <!-- Leaflet Map -->
+    <!-- Leaflet Map（目前沒開地圖也沒關係，留著備用） -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 
@@ -84,14 +84,14 @@
         }
     </style>
 </head>
-<body class="min-h-screen flex flex-col items-center justify-center py-4">
-<div id="app" class="w-full max-w-5xl mx-auto px-3 sm:px-4">
-    <!-- App Container -->
-    <div class="glass rounded-3xl shadow-2xl border border-slate-700/80 overflow-hidden flex flex-col min-h-[640px] max-h-[780px]">
+<body class="min-h-screen">
+<div id="app" class="w-full max-w-5xl mx-auto px-2 sm:px-4 py-0 sm:py-4">
+    <!-- App Container：手機吃滿螢幕高度，桌機才變卡片 -->
+    <div class="glass rounded-none sm:rounded-3xl shadow-2xl border border-slate-700/80 overflow-hidden flex flex-col h-screen sm:h-[720px]">
         <!-- Header -->
         <header class="bg-gradient-to-b from-slate-900/95 via-slate-950 to-slate-900/90 border-b border-slate-800/80">
             <!-- 上半：左側 Trip 選單 + 中間目的地/日期（只有行程頁顯示日期） -->
-            <div class="px-4 pt-4 pb-3 flex items-center justify-between">
+            <div class="px-4 pt-3 pb-2 flex items-center justify-between">
                 <!-- 左側：Trip 切換 -->
                 <button
                         @click="showTripList = true"
@@ -102,13 +102,13 @@
 
                 <!-- 中央：地點 / 日期資訊 -->
                 <div class="flex-1 flex flex-col items-center text-center">
-                    <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-900/80 border border-slate-700 shadow-sm">
+                    <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-900/80 border border-slate-700 shadow-sm max-w-full">
                         <i class="ph-bold ph-map-pin text-cyan-300 text-sm"></i>
                         <div class="flex flex-col items-center">
                             <span class="text-[13px] font-semibold tracking-wide text-slate-100 truncate max-w-[180px] sm:max-w-[260px]">
                                 {{ setup.destination || '我的旅行計畫' }}
                             </span>
-                            <p v-if="viewMode === 'plan'" class="text-xs text-slate-400 mt-1 truncate">
+                            <p v-if="viewMode === 'plan'" class="text-xs text-slate-400 mt-1 truncate max-w-[220px] sm:max-w-[260px]">
                                 {{ tripDateRange || '請在旅程設定中選擇日期與天數' }}
                             </p>
                             <p v-if="viewMode === 'plan' && daysToTrip !== null" class="text-[11px] text-teal-200 mt-0.5">
@@ -124,21 +124,21 @@
 
             <!-- 日期列 -->
             <div class="border-t border-slate-800/80 bg-slate-900/90">
-                <div class="px-3 py-2 flex items-center justify-between gap-3 text-[11px] text-slate-300">
-                    <div class="flex items-center gap-1.5">
-                        <span class="inline-flex items-center justify-center w-5 h-5 rounded-full border border-teal-500 text-[11px] text-teal-300 font-bold">
+                <div class="px-3 py-2 flex items-center justify-between gap-2 text-[11px] text-slate-300">
+                    <div class="flex items-center gap-1.5 min-w-0">
+                        <span class="inline-flex items-center justify-center w-5 h-5 rounded-full border border-teal-500 text-[11px] text-teal-300 font-bold flex-shrink-0">
                             D{{ currentDayIdx + 1 }}
                         </span>
-                        <span class="font-medium">{{ currentDay.shortDate || '未設定日期' }}</span>
-                        <span class="text-slate-500">·</span>
-                        <span class="text-slate-300">{{ currentDay.title || '旅程第 ' + (currentDayIdx + 1) + ' 天' }}</span>
+                        <span class="font-medium truncate">{{ currentDay.shortDate || '未設定日期' }}</span>
+                        <span class="text-slate-500 flex-shrink-0">·</span>
+                        <span class="text-slate-300 truncate">{{ currentDay.title || '旅程第 ' + (currentDayIdx + 1) + ' 天' }}</span>
                     </div>
-                    <div class="flex items-center gap-2">
+                    <div class="flex items-center gap-1 overflow-x-auto scrollbar-thin">
                         <button
                                 v-for="(d, idx) in days"
                                 :key="idx"
                                 @click="currentDayIdx = idx"
-                                class="px-1.5 py-0.5 rounded-full border text-[10px] transition-all"
+                                class="px-1.5 py-0.5 rounded-full border text-[10px] whitespace-nowrap transition-all"
                                 :class="idx === currentDayIdx
                                     ? 'border-teal-400 bg-teal-500/20 text-teal-200'
                                     : 'border-slate-700 bg-slate-900 text-slate-400 hover:border-teal-500/80 hover:text-teal-200'">
@@ -150,34 +150,35 @@
         </header>
 
         <!-- Content -->
-        <main class="flex-1 overflow-y-auto scrollbar-thin bg-gradient-to-b from-slate-950 via-slate-950 to-slate-900">
+        <!-- 注意：flex-1 + overflow-y-auto，搭配 h-screen，手機就只會這裡滾動 -->
+        <main class="flex-1 overflow-y-auto scrollbar-thin bg-gradient-to-b from-slate-950 via-slate-950 to-slate-900 pb-2">
             <!-- viewMode 切換 -->
-            <div class="px-4 pt-3 pb-2">
-                <div class="inline-flex bg-slate-900/90 border border-slate-700 rounded-2xl p-0.5 text-xs shadow-lg">
+            <div class="px-4 pt-2 pb-1">
+                <div class="inline-flex bg-slate-900/90 border border-slate-700 rounded-2xl p-0.5 text-xs shadow-lg w-full sm:w-auto">
                     <button
                             @click="viewMode = 'plan'"
-                            class="flex items-center gap-1 px-3 py-1.5 rounded-2xl transition-all"
+                            class="flex items-center justify-center gap-1 px-2 py-1.5 rounded-2xl transition-all flex-1 sm:flex-none"
                             :class="viewMode === 'plan' ? 'active-tab' : 'text-slate-300 hover:bg-slate-800/80'">
                         <i class="ph-bold ph-calendar-check text-sm"></i>
                         行程
                     </button>
                     <button
                             @click="viewMode = 'money'"
-                            class="flex items-center gap-1 px-3 py-1.5 rounded-2xl transition-all"
+                            class="flex items-center justify-center gap-1 px-2 py-1.5 rounded-2xl transition-all flex-1 sm:flex-none"
                             :class="viewMode === 'money' ? 'active-tab' : 'text-slate-300 hover:bg-slate-800/80'">
                         <i class="ph-bold ph-wallet text-sm"></i>
                         分帳
                     </button>
                     <button
                             @click="viewMode = 'checklist'"
-                            class="flex items-center gap-1 px-3 py-1.5 rounded-2xl transition-all"
+                            class="flex items-center justify-center gap-1 px-2 py-1.5 rounded-2xl transition-all flex-1 sm:flex-none"
                             :class="viewMode === 'checklist' ? 'active-tab' : 'text-slate-300 hover:bg-slate-800/80'">
                         <i class="ph-bold ph-check-square-offset text-sm"></i>
                         清單
                     </button>
                     <button
                             @click="viewMode = 'translate'"
-                            class="flex items-center gap-1 px-3 py-1.5 rounded-2xl transition-all"
+                            class="flex items-center justify-center gap-1 px-2 py-1.5 rounded-2xl transition-all flex-1 sm:flex-none"
                             :class="viewMode === 'translate' ? 'active-tab' : 'text-slate-300 hover:bg-slate-800/80'">
                         <i class="ph-bold ph-translate text-sm"></i>
                         翻譯
@@ -186,11 +187,11 @@
             </div>
 
             <!-- 行程頁 -->
-            <section v-if="viewMode === 'plan'" class="px-4 pb-6 space-y-4">
+            <section v-if="viewMode === 'plan'" class="px-4 pb-4 space-y-3">
                 <!-- 今日摘要 + 天氣 -->
                 <div class="grid grid-cols-1 md:grid-cols-[2fr,1.4fr] gap-3">
                     <!-- 摘要卡 -->
-                    <div class="card-glass rounded-2xl border border-sky-800/70 p-4 shadow-lg">
+                    <div class="card-glass rounded-2xl border border-sky-800/70 p-3 shadow-lg">
                         <div class="flex items-center justify-between mb-2">
                             <div class="flex items-center gap-2">
                                 <div class="w-8 h-8 rounded-full bg-gradient-to-br from-sky-400 to-cyan-500 flex items-center justify-center shadow-lg shadow-sky-500/40">
@@ -207,12 +208,12 @@
                                     @click="showSetup = true"
                                     class="flex items-center gap-1 text-[11px] text-slate-300 hover:text-sky-300">
                                 <i class="ph-bold ph-gear text-xs"></i>
-                                旅程設定
+                                設定
                             </button>
                         </div>
 
-                        <div class="grid grid-cols-3 gap-2 mt-2 text-[11px] text-slate-200">
-                            <div class="bg-slate-900/70 rounded-xl px-3 py-2 border border-slate-700/90">
+                        <div class="grid grid-cols-3 gap-2 mt-1 text-[11px] text-slate-200">
+                            <div class="bg-slate-900/70 rounded-xl px-2.5 py-2 border border-slate-700/90">
                                 <div class="flex items-center justify-between mb-1">
                                     <span class="text-slate-400 flex items-center gap-1">
                                         <i class="ph-bold ph-map-pin-line text-[13px] text-sky-300"></i>
@@ -227,7 +228,7 @@
                                 </p>
                             </div>
 
-                            <div class="bg-slate-900/70 rounded-xl px-3 py-2 border border-slate-700/90">
+                            <div class="bg-slate-900/70 rounded-xl px-2.5 py-2 border border-slate-700/90">
                                 <div class="flex items-center justify-between mb-1">
                                     <span class="text-slate-400 flex items-center gap-1">
                                         <i class="ph-bold ph-cloud-sun text-[13px] text-amber-300"></i>
@@ -255,7 +256,7 @@
                                 </div>
                             </div>
 
-                            <div class="bg-slate-900/70 rounded-xl px-3 py-2 border border-slate-700/90">
+                            <div class="bg-slate-900/70 rounded-xl px-2.5 py-2 border border-slate-700/90">
                                 <div class="flex items-center justify-between mb-1">
                                     <span class="text-slate-400 flex items-center gap-1">
                                         <i class="ph-bold ph-wallet text-[13px] text-emerald-300"></i>
@@ -279,13 +280,13 @@
                         </div>
                     </div>
 
-                    <!-- 小提醒卡
-                    <div class="card-glass rounded-2xl border border-emerald-700/60 p-4 shadow-lg">
+                    <!-- 小提醒卡 -->
+                    <div class="card-glass rounded-2xl border border-emerald-700/60 p-3 shadow-lg">
                         <div class="flex items-center gap-2 mb-2">
                             <div class="w-8 h-8 rounded-full floating-badge flex items-center justify-center">
                                 <i class="ph-bold ph-lightning text-white text-lg"></i>
                             </div>
-                            <div>
+                            <div class="min-w-0">
                                 <h3 class="text-sm font-semibold text-emerald-100">小幫手建議</h3>
                                 <p class="text-[11px] text-emerald-100/80">
                                     旅程中想到的雜事可以丟到清單或翻譯區先記下
@@ -294,14 +295,14 @@
                         </div>
                         <ul class="text-[11px] text-slate-200 space-y-1 list-disc list-inside">
                             <li>行程卡片可以拖曳排序，長按左側時間圓點即可調整順序</li>
-                            <li>每一個卡片都可以設定地點、備註，或用「附近小幫手」找吃的</li>
+                            <li>每個卡片可以設定地點、備註，或用「附近小幫手」找吃的</li>
                             <li>分帳區會自動幫你算每個人多付 / 少付多少</li>
                         </ul>
-                    </div> -->
+                    </div>
                 </div>
 
                 <!-- 行程 Timeline -->
-                <div class="mt-3 bg-slate-950/80 rounded-2xl border border-slate-800/80 p-3 max-h-[420px] overflow-y-auto scrollbar-thin">
+                <div class="mt-2 bg-slate-950/80 rounded-2xl border border-slate-800/80 p-3 max-h-[420px] overflow-y-auto scrollbar-thin">
                     <div class="flex items-center justify-between mb-2">
                         <h2 class="text-xs font-semibold tracking-wide text-slate-200 flex items-center gap-1.5">
                             <i class="ph-bold ph-timer text-sky-300 text-sm"></i>
@@ -335,7 +336,7 @@
                                 class="flex gap-3">
 
                             <!-- 時間軸左側 -->
-                            <div class="flex flex-col items-center w-10 mt-1">
+                            <div class="flex flex-col items-center w-8 mt-1">
                                 <div class="timeline-dot cursor-grab active:cursor-grabbing"></div>
                                 <div v-if="idx !== currentDay.items.length - 1" class="flex-1 w-[2px] bg-gradient-to-b from-sky-500/60 via-sky-500/20 to-transparent mt-1"></div>
                             </div>
@@ -440,10 +441,10 @@
                                                         v-for="rec in recommendationsMap[idx]"
                                                         :key="rec.place_id"
                                                         class="bg-slate-900/90 border border-amber-500/40 rounded-xl px-2.5 py-1.5 text-[11px] text-slate-100 flex items-start justify-between gap-2">
-                                                    <div class="space-y-0.5">
+                                                    <div class="space-y-0.5 min-w-0">
                                                         <div class="flex items-center gap-1.5">
                                                             <span class="font-semibold text-amber-100 truncate max-w-[150px]">{{ rec.name }}</span>
-                                                            <span class="text-[10px] text-amber-300 bg-amber-900/60 border border-amber-500/40 rounded-full px-1.5 py-0.5">
+                                                            <span class="text-[10px] text-amber-300 bg-amber-900/60 border border-amber-500/40 rounded-full px-1.5 py-0.5 flex-shrink-0">
                                                                 ★ {{ rec.rating || 'N/A' }}
                                                             </span>
                                                         </div>
@@ -454,7 +455,7 @@
                                                     <button
                                                             @click="applyRecommendation(item, rec)"
                                                             class="text-[10px] px-2 py-1 rounded-full bg-amber-500/90 text-slate-900 font-medium hover:bg-amber-400 flex-shrink-0">
-                                                        套用到行程
+                                                        套用
                                                     </button>
                                                 </div>
                                             </div>
@@ -482,10 +483,10 @@
             </section>
 
             <!-- 分帳頁 -->
-            <section v-if="viewMode === 'money'" class="px-4 pb-6 space-y-4">
+            <section v-if="viewMode === 'money'" class="px-4 pb-4 space-y-3">
                 <!-- 匯率 & 成員 -->
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    <div class="bg-slate-900/80 rounded-2xl border border-slate-800/80 p-4 space-y-2">
+                    <div class="bg-slate-900/80 rounded-2xl border border-slate-800/80 p-3 space-y-2">
                         <div class="flex items-center justify-between mb-1">
                             <div class="flex items-center gap-2">
                                 <div class="w-8 h-8 rounded-full bg-gradient-to-br from-emerald-400 to-cyan-400 flex items-center justify-center shadow-lg shadow-emerald-400/40">
@@ -501,11 +502,11 @@
                             <button
                                     @click="detectRate"
                                     class="text-[11px] px-2 py-1 rounded-full border border-emerald-400/80 text-emerald-200 hover:bg-emerald-900/60">
-                                一鍵帶入建議匯率
+                                一鍵帶入建議
                             </button>
                         </div>
 
-                        <div class="flex items-center gap-2 mt-2">
+                        <div class="flex items-center gap-2 mt-1">
                             <input
                                     v-model.number="exchangeRate.rate"
                                     type="number"
@@ -513,12 +514,12 @@
                                     class="flex-1 bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-[13px] text-slate-100 focus:outline-none focus:border-emerald-500"
                                     placeholder="1 當地貨幣 = 幾元台幣？"
                             />
-                            <span class="text-[12px] text-slate-400">{{ exchangeRate.note || '例如：1 日圓 ≈ 0.23 TWD' }}</span>
+                            <span class="text-[11px] text-slate-400">{{ exchangeRate.note || '例如：1 日圓 ≈ 0.23 TWD' }}</span>
                         </div>
                     </div>
 
                     <!-- 成員設定 -->
-                    <div class="bg-slate-800/90 p-4 rounded-xl border border-slate-700 shadow-sm space-y-3">
+                    <div class="bg-slate-800/90 p-3 rounded-xl border border-slate-700 shadow-sm space-y-2">
                         <div class="flex items-center justify-between">
                             <div class="text-xs font-bold text-slate-300 flex items-center gap-1">
                                 <i class="ph-bold ph-users-three"></i>
@@ -536,7 +537,7 @@
                         </div>
                         <div class="grid grid-cols-2 gap-2">
                             <div v-for="(p, idx) in participants" :key="idx" class="flex items-center gap-2">
-                                <span class="text-[11px] text-slate-400 w-8 text-right">成員{{ idx + 1 }}</span>
+                                <span class="text-[11px] text-slate-400 w-10 text-right">成員{{ idx + 1 }}</span>
                                 <input
                                         v-model="participants[idx]"
                                         @input="syncParticipantsStr"
@@ -550,7 +551,7 @@
                 <!-- 記帳 & 結算 -->
                 <div class="grid grid-cols-1 md:grid-cols-[1.2fr,1.1fr] gap-3">
                     <!-- 記帳輸入 -->
-                    <div class="bg-slate-900/80 rounded-2xl border border-slate-800/80 p-4">
+                    <div class="bg-slate-900/80 rounded-2xl border border-slate-800/80 p-3">
                         <div class="flex items-center justify-between mb-2">
                             <h2 class="text-sm font-semibold text-slate-100 flex items-center gap-1.5">
                                 <i class="ph-bold ph-notebook text-emerald-300 text-sm"></i>
@@ -596,7 +597,7 @@
                                 <i class="ph-bold ph-clock-counter-clockwise text-slate-400"></i>
                                 花費列表
                             </h3>
-                            <div class="max-h-48 overflow-y-auto scrollbar-thin space-y-1.5 text-[11px]">
+                            <div class="max-h-40 overflow-y-auto scrollbar-thin space-y-1.5 text-[11px]">
                                 <div
                                         v-for="(e, idx) in expenses"
                                         :key="idx"
@@ -628,12 +629,12 @@
                     </div>
 
                     <!-- 結算結果 -->
-                    <div class="bg-slate-900/80 rounded-2xl border border-slate-800/80 p-4">
+                    <div class="bg-slate-900/80 rounded-2xl border border-slate-800/80 p-3">
                         <h2 class="text-sm font-semibold text-slate-100 mb-2 flex items-center gap-1.5">
                             <i class="ph-bold ph-scales text-emerald-300 text-sm"></i>
                             分帳結果
                         </h2>
-                        <div class="grid grid-cols-2 gap-2 text-[11px] mb-3">
+                        <div class="grid grid-cols-2 gap-2 text-[11px] mb-2">
                             <div class="bg-slate-950/80 rounded-xl border border-slate-700 px-3 py-2">
                                 <p class="text-slate-400 text-[10px]">總花費 (當地幣)</p>
                                 <p class="text-emerald-300 font-semibold text-sm">
@@ -648,7 +649,7 @@
                             </div>
                         </div>
 
-                        <div class="bg-slate-950/80 rounded-xl border border-slate-700 px-3 py-2 text-[11px] mb-3">
+                        <div class="bg-slate-950/80 rounded-xl border border-slate-700 px-3 py-2 text-[11px] mb-2">
                             <p class="text-slate-400 text-[10px] mb-1">每人應分攤：</p>
                             <p class="text-slate-100">
                                 {{ perPersonLocal }} {{ exchangeRate.currency || '' }} ≈
@@ -656,7 +657,7 @@
                             </p>
                         </div>
 
-                        <div class="space-y-1.5 text-[11px] max-h-40 overflow-y-auto scrollbar-thin">
+                        <div class="space-y-1.5 text-[11px] max-h-36 overflow-y-auto scrollbar-thin">
                             <div
                                     v-for="p in participants"
                                     :key="p"
@@ -685,7 +686,7 @@
                             </div>
                         </div>
 
-                        <div class="mt-3 text-[10px] text-slate-500">
+                        <div class="mt-2 text-[10px] text-slate-500">
                             ※ 目前採平均分攤：所有花費平均分給每一位成員。
                         </div>
                     </div>
@@ -693,9 +694,9 @@
             </section>
 
             <!-- 清單頁 -->
-            <section v-if="viewMode === 'checklist'" class="px-4 pb-6 space-y-4">
+            <section v-if="viewMode === 'checklist'" class="px-4 pb-4 space-y-3">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    <div class="bg-slate-900/80 rounded-2xl border border-slate-800/80 p-4">
+                    <div class="bg-slate-900/80 rounded-2xl border border-slate-800/80 p-3">
                         <h2 class="text-sm font-semibold text-slate-100 mb-2 flex items-center gap-1.5">
                             <i class="ph-bold ph-suitcase-simple text-sky-300 text-sm"></i>
                             行李 / 必備物品
@@ -729,7 +730,7 @@
                         </div>
                     </div>
 
-                    <div class="bg-slate-900/80 rounded-2xl border border-slate-800/80 p-4">
+                    <div class="bg-slate-900/80 rounded-2xl border border-slate-800/80 p-3">
                         <h2 class="text-sm font-semibold text-slate-100 mb-2 flex items-center gap-1.5">
                             <i class="ph-bold ph-list-checks text-emerald-300 text-sm"></i>
                             行程前 / 回國前檢查
@@ -766,8 +767,8 @@
             </section>
 
             <!-- 翻譯頁 -->
-            <section v-if="viewMode === 'translate'" class="px-4 pb-6 space-y-4">
-                <div class="bg-slate-900/80 rounded-2xl border border-slate-800/80 p-4">
+            <section v-if="viewMode === 'translate'" class="px-4 pb-4 space-y-3">
+                <div class="bg-slate-900/80 rounded-2xl border border-slate-800/80 p-3">
                     <h2 class="text-sm font-semibold text-slate-100 mb-2 flex items-center gap-1.5">
                         <i class="ph-bold ph-chat-circle-text text-sky-300 text-sm"></i>
                         常用句 / 翻譯小紙條
@@ -793,9 +794,9 @@
                                     placeholder="在這裡填上翻譯好的內容"></textarea>
                         </div>
                     </div>
-                    <!-- <div class="mt-2 text-[11px] text-slate-500">
+                    <div class="mt-2 text-[11px] text-slate-500">
                         ※ 目前翻譯欄是純手動貼上，你可以搭配 ChatGPT 或翻譯工具，把結果貼過來整理。
-                    </div> -->
+                    </div>
                 </div>
             </section>
         </main>
@@ -838,7 +839,7 @@
         <div
                 v-if="showTripList"
                 class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-40">
-            <div class="bg-slate-900 rounded-2xl border border-slate-700 w-full max-w-md p-4 shadow-2xl">
+            <div class="bg-slate-900 rounded-2xl border border-slate-700 w-[92%] max-w-md p-4 shadow-2xl max-h-[80vh] overflow-y-auto scrollbar-thin">
                 <div class="flex items-center justify-between mb-3">
                     <h2 class="text-sm font-semibold text-slate-100 flex items-center gap-1.5">
                         <i class="ph-bold ph-list text-sky-300"></i>
@@ -851,14 +852,14 @@
                     </button>
                 </div>
 
-                <div class="space-y-1.5 max-h-64 overflow-y-auto scrollbar-thin text-[12px]">
+                <div class="space-y-1.5 text-[12px]">
                     <div
                             v-for="trip in tripList"
                             :key="trip.id"
                             class="flex items-center justify-between bg-slate-950/90 border border-slate-700 rounded-xl px-3 py-2 cursor-pointer hover:border-sky-500"
                             @click="switchTrip(trip.id)">
                         <div>
-                            <p class="font-semibold text-slate-100">{{ trip.name }}</p>
+                            <p class="font-semibold text-slate-100 truncate max-w-[220px]">{{ trip.name }}</p>
                             <p class="text-[10px] text-slate-400">
                                 {{ trip.dateRange || '未設定日期' }}
                             </p>
@@ -876,7 +877,7 @@
         <div
                 v-if="showSetup"
                 class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-40">
-            <div class="bg-slate-900 rounded-2xl border border-slate-700 w-full max-w-lg p-5 shadow-2xl max-h-[90vh] overflow-y-auto scrollbar-thin">
+            <div class="bg-slate-900 rounded-2xl border border-slate-700 w-[92%] max-w-lg p-5 shadow-2xl max-h-[88vh] overflow-y-auto scrollbar-thin">
                 <div class="flex items-center justify-between mb-3">
                     <h2 class="text-sm font-semibold text-slate-100 flex items-center gap-1.5">
                         <i class="ph-bold ph-gear text-sky-300"></i>
@@ -971,91 +972,86 @@
     let mapInstance = null;
     let userMarker = null;
 
-        // 可選：填入自己的 Google Maps API Key，就會優先用 Distance Matrix API 算時間
-        // 若留空，會改用 OpenStreetMap + 直線距離粗估時間
-        const GOOGLE_MAPS_API_KEY = '';
+    const GOOGLE_MAPS_API_KEY = ''; // 有 key 再填
 
-        // 簡單快取地點座標，避免重複呼叫 geocoding
-        const geocodeCache = {};
+    const geocodeCache = {};
 
-        function toRad(deg) {
-            return deg * Math.PI / 180;
-        }
+    function toRad(deg) {
+        return deg * Math.PI / 180;
+    }
 
-        function haversineDistanceKm(a, b) {
-            const R = 6371; // 地球半徑 (km)
-            const dLat = toRad(b.lat - a.lat);
-            const dLon = toRad(b.lon - a.lon);
-            const lat1 = toRad(a.lat);
-            const lat2 = toRad(b.lat);
-            const h = Math.sin(dLat / 2) ** 2 +
-                      Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLon / 2) ** 2;
-            return 2 * R * Math.asin(Math.sqrt(h));
-        }
+    function haversineDistanceKm(a, b) {
+        const R = 6371;
+        const dLat = toRad(b.lat - a.lat);
+        const dLon = toRad(b.lon - a.lon);
+        const lat1 = toRad(a.lat);
+        const lat2 = toRad(b.lat);
+        const h = Math.sin(dLat / 2) ** 2 +
+                  Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLon / 2) ** 2;
+        return 2 * R * Math.asin(Math.sqrt(h));
+    }
 
-        function estimateDurationMinutes(distanceKm, mode) {
-            // 簡單假設平均時速 (含等車 / 轉乘的 buffer)
-            let speedKmh = 4.5; // 走路
-            if (mode === 'taxi') speedKmh = 30;
-            else if (mode === 'bus') speedKmh = 20;
-            else if (mode === 'train') speedKmh = 45;
+    function estimateDurationMinutes(distanceKm, mode) {
+        let speedKmh = 4.5;
+        if (mode === 'taxi') speedKmh = 30;
+        else if (mode === 'bus') speedKmh = 20;
+        else if (mode === 'train') speedKmh = 45;
 
-            const hours = distanceKm / Math.max(speedKmh, 1);
-            let minutes = Math.round(hours * 60);
-            if (minutes < 3) minutes = 3; // 最少 3 分鐘
-            return minutes;
-        }
+        const hours = distanceKm / Math.max(speedKmh, 1);
+        let minutes = Math.round(hours * 60);
+        if (minutes < 3) minutes = 3;
+        return minutes;
+    }
 
-        function formatMinutesToText(minutes) {
-            if (!minutes || minutes <= 0) return '';
-            if (minutes < 60) return `約 ${minutes} 分鐘`;
-            const h = Math.floor(minutes / 60);
-            const m = minutes % 60;
-            if (m === 0) return `約 ${h} 小時`;
-            return `約 ${h} 小時 ${m} 分鐘`;
-        }
+    function formatMinutesToText(minutes) {
+        if (!minutes || minutes <= 0) return '';
+        if (minutes < 60) return `約 ${minutes} 分鐘`;
+        const h = Math.floor(minutes / 60);
+        const m = minutes % 60;
+        if (m === 0) return `約 ${h} 小時`;
+        return `約 ${h} 小時 ${m} 分鐘`;
+    }
 
-        async function geocodeNameToLatLng(name) {
-            if (!name) return null;
-            if (geocodeCache[name]) return geocodeCache[name];
-            try {
-                const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(name)}&limit=1`);
-                const data = await res.json();
-                if (data && data[0]) {
-                    const coord = { lat: parseFloat(data[0].lat), lon: parseFloat(data[0].lon) };
-                    geocodeCache[name] = coord;
-                    return coord;
-                }
-            } catch (e) {
-                console.error('Geocode 失敗', e);
+    async function geocodeNameToLatLng(name) {
+        if (!name) return null;
+        if (geocodeCache[name]) return geocodeCache[name];
+        try {
+            const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(name)}&limit=1`);
+            const data = await res.json();
+            if (data && data[0]) {
+                const coord = { lat: parseFloat(data[0].lat), lon: parseFloat(data[0].lon) };
+                geocodeCache[name] = coord;
+                return coord;
             }
-            return null;
+        } catch (e) {
+            console.error('Geocode 失敗', e);
         }
+        return null;
+    }
 
-        async function getGoogleTravelTimeText(origin, destination, mode) {
-            if (!GOOGLE_MAPS_API_KEY) return null;
-            const modeMap = {
-                walk: 'walking',
-                bus: 'transit',
-                train: 'transit',
-                taxi: 'driving'
-            };
-            const gmMode = modeMap[mode] || 'walking';
-            const url = `https://maps.googleapis.com/maps/api/distancematrix/json?units=metric&origins=${encodeURIComponent(origin)}&destinations=${encodeURIComponent(destination)}&mode=${gmMode}&language=zh-TW&key=${GOOGLE_MAPS_API_KEY}`;
-            try {
-                const res = await fetch(url);
-                const data = await res.json();
-                const element = data.rows?.[0]?.elements?.[0];
-                if (element && element.status === 'OK') {
-                    const minutes = Math.round(element.duration.value / 60);
-                    return formatMinutesToText(minutes);
-                }
-            } catch (e) {
-                console.error('Google Distance Matrix 失敗或被瀏覽器擋下 (CORS)', e);
+    async function getGoogleTravelTimeText(origin, destination, mode) {
+        if (!GOOGLE_MAPS_API_KEY) return null;
+        const modeMap = {
+            walk: 'walking',
+            bus: 'transit',
+            train: 'transit',
+            taxi: 'driving'
+        };
+        const gmMode = modeMap[mode] || 'walking';
+        const url = `https://maps.googleapis.com/maps/api/distancematrix/json?units=metric&origins=${encodeURIComponent(origin)}&destinations=${encodeURIComponent(destination)}&mode=${gmMode}&language=zh-TW&key=${GOOGLE_MAPS_API_KEY}`;
+        try {
+            const res = await fetch(url);
+            const data = await res.json();
+            const element = data.rows?.[0]?.elements?.[0];
+            if (element && element.status === 'OK') {
+                const minutes = Math.round(element.duration.value / 60);
+                return formatMinutesToText(minutes);
             }
-            return null;
+        } catch (e) {
+            console.error('Google Distance Matrix 失敗或被瀏覽器擋下 (CORS)', e);
         }
-
+        return null;
+    }
 
     if (useFirebase && firebaseConfig) {
     }
@@ -1102,7 +1098,7 @@
                 items: [
                     { text: '護照 / 身分證', done: false },
                     { text: '現金 / 信用卡 / 提款卡', done: false },
-                    { text: '手機、充電線、行動電源', done: false },
+                    { text: '手機、充電器、行動電源', done: false },
                     { text: '轉接頭 / 轉接插座', done: false }
                 ],
                 todos: [
@@ -1215,14 +1211,14 @@
             });
 
             const addItem = () => currentDay.value.items.push({
-                    time: '',
-                    type: 'spot',
-                    activity: '',
-                    location: '',
-                    note: '',
-                    transportMode: 'walk',
-                    travelTimeText: ''
-                });
+                time: '',
+                type: 'spot',
+                activity: '',
+                location: '',
+                note: '',
+                transportMode: 'walk',
+                travelTimeText: ''
+            });
             const removeItem = (idx) => currentDay.value.items.splice(idx, 1);
             const clearDay = () => {
                 if (confirm('確定要清除這一天所有行程嗎？')) {
@@ -1298,31 +1294,31 @@
             });
 
             const updateParticipants = () => {
-                    participants.value = participantsStr.value.split(',').map(s=>s.trim()).filter(s=>s);
-                    participantCount.value = participants.value.length || 0;
-                    if (!participants.value.includes(newExpense.value.payer)) {
-                        newExpense.value.payer = participants.value[0] || '我';
+                participants.value = participantsStr.value.split(',').map(s=>s.trim()).filter(s=>s);
+                participantCount.value = participants.value.length || 0;
+                if (!participants.value.includes(newExpense.value.payer)) {
+                    newExpense.value.payer = participants.value[0] || '我';
+                }
+            };
+            const syncParticipantsStr = () => {
+                participantsStr.value = participants.value.join(', ');
+                if (!participants.value.includes(newExpense.value.payer)) {
+                    newExpense.value.payer = participants.value[0] || '我';
+                }
+            };
+            const updateParticipantCount = () => {
+                const target = Math.max(1, Number(participantCount.value) || 1);
+                const current = participants.value.length;
+                if (current < target) {
+                    for (let i = current; i < target; i++) {
+                        participants.value.push(`成員${i + 1}`);
                     }
-                };
-                const syncParticipantsStr = () => {
-                    participantsStr.value = participants.value.join(', ');
-                    if (!participants.value.includes(newExpense.value.payer)) {
-                        newExpense.value.payer = participants.value[0] || '我';
-                    }
-                };
-                const updateParticipantCount = () => {
-                    const target = Math.max(1, Number(participantCount.value) || 1);
-                    const current = participants.value.length;
-                    if (current < target) {
-                        for (let i = current; i < target; i++) {
-                            participants.value.push(`成員${i + 1}`);
-                        }
-                    } else if (current > target) {
-                        participants.value.splice(target);
-                    }
-                    syncParticipantsStr();
-                };
-                const updateDate = (e, d) => {
+                } else if (current > target) {
+                    participants.value.splice(target);
+                }
+                syncParticipantsStr();
+            };
+            const updateDate = (e, d) => {
                 d.date = e.target.value;
                 if (d.date) {
                     const dt = new Date(d.date);
@@ -1374,21 +1370,20 @@
                 const lExp = localStorage.getItem(`${id}_expenses`);
                 const lUsers = localStorage.getItem(`${id}_users`);
                 if(lDays) {
-                        days.value = JSON.parse(lDays);
-                        // 兼容舊資料：補上交通相關欄位預設值
-                        days.value.forEach(d => {
-                            if (!d.items) d.items = [];
-                            d.items.forEach(it => {
-                                if (!it.transportMode) it.transportMode = 'walk';
-                                if (typeof it.travelTimeText === 'undefined') it.travelTimeText = '';
-                            });
+                    days.value = JSON.parse(lDays);
+                    days.value.forEach(d => {
+                        if (!d.items) d.items = [];
+                        d.items.forEach(it => {
+                            if (!it.transportMode) it.transportMode = 'walk';
+                            if (typeof it.travelTimeText === 'undefined') it.travelTimeText = '';
                         });
-                    }
-                    if(lExp) expenses.value = JSON.parse(lExp);
-                    if(lUsers) { participantsStr.value = lUsers; updateParticipants(); }
+                    });
+                }
+                if(lExp) expenses.value = JSON.parse(lExp);
+                if(lUsers) { participantsStr.value = lUsers; updateParticipants(); }
 
                 if (!setup.startDate) {
-                    days.value.forEach((d, i) => {
+                    days.value.forEach((d) => {
                         d.shortDate = '';
                     });
                 }
@@ -1444,47 +1439,46 @@
             };
 
             const applyRecommendation = (item, rec) => {
-                    item.activity = rec.name;
-                    item.location = rec.name;
-                };
-                const estimateTravelTime = async (index) => {
-                    const items = currentDay.value.items || [];
-                    if (index <= 0 || index >= items.length) {
-                        return;
-                    }
-                    const prev = items[index - 1];
-                    const curr = items[index];
-                    if (!prev.location || !curr.location) {
-                        alert('請先在「上一個」以及「這一個」行程都填寫地點。');
-                        return;
-                    }
-                    if (!curr.transportMode) {
-                        curr.transportMode = 'walk';
-                    }
+                item.activity = rec.name;
+                item.location = rec.name;
+            };
 
-                    // 先嘗試使用 Google Distance Matrix API（需要在上方填入 GOOGLE_MAPS_API_KEY）
-                    let textResult = null;
-                    try {
-                        textResult = await getGoogleTravelTimeText(prev.location, curr.location, curr.transportMode);
-                    } catch (e) {
-                        console.error(e);
-                    }
+            const estimateTravelTime = async (index) => {
+                const items = currentDay.value.items || [];
+                if (index <= 0 || index >= items.length) {
+                    return;
+                }
+                const prev = items[index - 1];
+                const curr = items[index];
+                if (!prev.location || !curr.location) {
+                    alert('請先在「上一個」以及「這一個」行程都填寫地點。');
+                    return;
+                }
+                if (!curr.transportMode) {
+                    curr.transportMode = 'walk';
+                }
 
-                    // 若未成功，改用 OpenStreetMap 的座標 + 直線距離粗估
-                    if (!textResult) {
-                        const origin = await geocodeNameToLatLng(prev.location);
-                        const dest = await geocodeNameToLatLng(curr.location);
-                        if (origin && dest) {
-                            const distKm = haversineDistanceKm(origin, dest);
-                            const minutes = estimateDurationMinutes(distKm, curr.transportMode);
-                            textResult = `${formatMinutesToText(minutes)}（直線距離約 ${distKm.toFixed(1)} 公里）`;
-                        } else {
-                            textResult = '無法估算，請在 Google Maps 再確認。';
-                        }
-                    }
+                let textResult = null;
+                try {
+                    textResult = await getGoogleTravelTimeText(prev.location, curr.location, curr.transportMode);
+                } catch (e) {
+                    console.error(e);
+                }
 
-                    curr.travelTimeText = textResult;
-                };
+                if (!textResult) {
+                    const origin = await geocodeNameToLatLng(prev.location);
+                    const dest = await geocodeNameToLatLng(curr.location);
+                    if (origin && dest) {
+                        const distKm = haversineDistanceKm(origin, dest);
+                        const minutes = estimateDurationMinutes(distKm, curr.transportMode);
+                        textResult = `${formatMinutesToText(minutes)}（直線距離約 ${distKm.toFixed(1)} 公里）`;
+                    } else {
+                        textResult = '無法估算，請在 Google Maps 再確認。';
+                    }
+                }
+
+                curr.travelTimeText = textResult;
+            };
 
             const loadTripFromStorage = () => {
                 const str = localStorage.getItem(currentTripId.value);
@@ -1528,6 +1522,15 @@
                         }
                     });
                 }
+
+                // 兼容舊資料：補交通欄位
+                days.value.forEach(d => {
+                    if (!d.items) d.items = [];
+                    d.items.forEach(it => {
+                        if (!it.transportMode) it.transportMode = 'walk';
+                        if (typeof it.travelTimeText === 'undefined') it.travelTimeText = '';
+                    });
+                });
             };
 
             const rebuildLocalStructure = () => {
@@ -1558,23 +1561,23 @@
             });
 
             return {
-                    viewMode, currentDayIdx, days, currentDay,
-                    participants, participantsStr, participantCount, updateParticipants, syncParticipantsStr, updateParticipantCount,
-                    setup, applySetup, tripDateRange, daysToTrip,
-                    addItem, removeItem, clearDay, duplicateItem,
-                    expenses, exchangeRate, newExpense,
-                    detectRate, addExpense, removeExpense,
-                    totalAmount, totalTwd, perPersonLocal, perPersonTwd,
-                    paidByPerson, balance,
-                    checklist, translate,
-                    dailyBudgetDisplay, todaySpentDisplay,
-                    weather, fetchWeather,
-                    tripList, currentTripId, showTripList, switchTrip, rebuildTripList,
-                    showSetup,
-                    updateDate,
-                    searchNearby, recommendationsMap, isSearchingRecs, applyRecommendation, estimateTravelTime, searchTargetIndex,
-                    loadTripFromStorage
-                };
+                viewMode, currentDayIdx, days, currentDay,
+                participants, participantsStr, participantCount, updateParticipants, syncParticipantsStr, updateParticipantCount,
+                setup, applySetup, tripDateRange, daysToTrip,
+                addItem, removeItem, clearDay, duplicateItem,
+                expenses, exchangeRate, newExpense,
+                detectRate, addExpense, removeExpense,
+                totalAmount, totalTwd, perPersonLocal, perPersonTwd,
+                paidByPerson, balance,
+                checklist, translate,
+                dailyBudgetDisplay, todaySpentDisplay,
+                weather, fetchWeather,
+                tripList, currentTripId, showTripList, switchTrip, rebuildTripList,
+                showSetup,
+                updateDate,
+                searchNearby, recommendationsMap, isSearchingRecs, applyRecommendation, estimateTravelTime, searchTargetIndex,
+                loadTripFromStorage
+            };
         }
     });
 
