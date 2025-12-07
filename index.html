@@ -1,1260 +1,1584 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>我的旅遊計畫 | Travel Plan</title>
-    <!-- Vue 3 -->
-    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
-    <!-- Tailwind CSS -->
+    <meta charset="UTF-8" />
+    <title>輕量旅遊行程 & 分帳小幫手</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- Tailwind CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <!-- Vue 3 CDN -->
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <!-- Phosphor Icons -->
-    <script src="https://unpkg.com/@phosphor-icons/web"></script>
-    <!-- Leaflet CSS & JS -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+    <script src="https://unpkg.com/phosphor-icons"></script>
+    <!-- Leaflet Map -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 
     <style>
         body {
-            font-family: 'Noto Sans TC', 'Noto Sans JP', sans-serif;
-            background-color: #020617; /* 深色背景 */
+            background: radial-gradient(circle at top, #0f172a, #020617);
+            color: #e5e7eb;
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
         }
-        .hide-scroll::-webkit-scrollbar { display: none; }
-        .hide-scroll { -ms-overflow-style: none; scrollbar-width: none; }
-        .fade-enter-active, .fade-leave-active { transition: opacity 0.3s ease; }
-        .fade-enter-from, .fade-leave-to { opacity: 0; }
-        #map-container { z-index: 1; }
-        .gps-pulse {
-            width: 14px; height: 14px; border: 2px solid #fff; border-radius: 50%;
-            background-color: #3b82f6; box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.4);
-            animation: pulse-blue 2s infinite;
+        .glass {
+            background: rgba(15, 23, 42, 0.9);
+            backdrop-filter: blur(16px);
         }
-        @keyframes pulse-blue {
-            0% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7); }
-            70% { box-shadow: 0 0 0 10px rgba(59, 130, 246, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0); }
+        .scrollbar-thin::-webkit-scrollbar {
+            width: 4px;
+            height: 4px;
         }
-        .leaflet-popup-content-wrapper { border-radius: 12px; padding: 0; overflow: hidden; }
-        .leaflet-popup-content { margin: 0; width: 200px !important; }
-        @keyframes fade-in-up {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
+        .scrollbar-thin::-webkit-scrollbar-thumb {
+            background-color: rgba(148, 163, 184, 0.6);
+            border-radius: 999px;
         }
-        .animate-fade-in { animation: fade-in-up 0.4s ease-out forwards; }
+        .scrollbar-thin::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .timeline-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 999px;
+            border: 2px solid #38bdf8;
+            background-color: #0f172a;
+            box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.4);
+        }
+
+        .btn-soft {
+            @apply px-3 py-1 rounded-full text-xs font-medium;
+            background: rgba(15, 23, 42, 0.9);
+            border: 1px solid rgba(148, 163, 184, 0.6);
+            color: #e5e7eb;
+        }
+        .btn-soft:hover {
+            background: rgba(30, 64, 175, 0.5);
+            border-color: rgba(96, 165, 250, 0.7);
+        }
+
+        .bottom-nav {
+            backdrop-filter: blur(14px);
+            background: linear-gradient(to top, rgba(15, 23, 42, 0.98), rgba(15, 23, 42, 0.8));
+        }
+
+        .floating-badge {
+            background: radial-gradient(circle at top, #22c55e, #15803d);
+            box-shadow:
+                0 0 0 4px rgba(22, 163, 74, 0.5),
+                0 10px 25px rgba(6, 95, 70, 0.8);
+        }
+
+        .active-tab {
+            background: rgba(15, 118, 110, 0.3);
+            border-color: rgba(45, 212, 191, 0.9);
+            color: #f9fafb;
+            box-shadow: 0 6px 16px rgba(45, 212, 191, 0.4);
+        }
+
+        .input-underline {
+            border-bottom: 1px dashed rgba(148, 163, 184, 0.7);
+        }
+
+        .card-glass {
+            background: radial-gradient(circle at top left, rgba(15, 23, 42, 0.95), rgba(15, 23, 42, 0.85));
+        }
     </style>
 </head>
-<body class="text-slate-100 bg-slate-900 h-screen flex flex-col overflow-hidden">
-
-    <div id="app" class="relative flex flex-col h-full max-w-md mx-auto w-full bg-slate-900/90 backdrop-blur shadow-2xl sm:rounded-xl sm:my-4 sm:h-[95vh] sm:border-4 sm:border-slate-800">
-
-        <!-- Header：上方大標 + 日期 + 倒數 -->
-        <header class="bg-gradient-to-b from-slate-900 via-slate-900/95 to-slate-900 text-white shrink-0 z-20">
-            <!-- 這一塊整個換掉 -->
-            <div class="px-4 pt-4 pb-3 flex items-start justify-center relative">
-                <!-- 左上角：旅程選單按鈕（保留功能，但不占版面寬度） -->
+<body class="min-h-screen flex flex-col items-center justify-center py-4">
+<div id="app" class="w-full max-w-5xl mx-auto px-3 sm:px-4">
+    <!-- App Container -->
+    <div class="glass rounded-3xl shadow-2xl border border-slate-700/80 overflow-hidden flex flex-col min-h-[640px] max-h-[780px]">
+        <!-- Header -->
+        <header class="bg-gradient-to-b from-slate-900/95 via-slate-950 to-slate-900/90 border-b border-slate-800/80">
+            <!-- 上半：左側 Trip 選單 + 中間目的地/日期（只有行程頁顯示日期） -->
+            <div class="px-4 pt-4 pb-3 flex items-center justify-between">
+                <!-- 左側：Trip 切換 -->
                 <button
-                    @click="showTripMenu = true"
-                    class="absolute left-4 top-4 text-slate-300 hover:text-white transition">
-                    <i class="ph-bold ph-list text-2xl"></i>
+                        @click="showTripList = true"
+                        class="flex items-center gap-1 text-xs text-slate-300 hover:text-cyan-300">
+                    <i class="ph-bold ph-list text-base"></i>
+                    <span class="hidden sm:inline">我的旅程</span>
                 </button>
-        
-                <!-- 中間：目的地 + 日期 + 倒數，全置中 -->
-                <div class="overflow-hidden text-center">
-                    <div class="flex items-center justify-center gap-2">
-                        <h1 class="text-2xl font-bold tracking-wide truncate">
-                            {{ setup.destination || '旅遊計畫' }}
-                        </h1>
-                        <i class="ph-fill ph-airplane-tilt text-lg opacity-70"></i>
+
+                <!-- 中央：地點 / 日期資訊 -->
+                <div class="flex-1 flex flex-col items-center text-center">
+                    <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-900/80 border border-slate-700 shadow-sm">
+                        <i class="ph-bold ph-map-pin text-cyan-300 text-sm"></i>
+                        <div class="flex flex-col items-center">
+                            <span class="text-[13px] font-semibold tracking-wide text-slate-100 truncate max-w-[180px] sm:max-w-[260px]">
+                                {{ setup.destination || '我的旅行計畫' }}
+                            </span>
+                            <p v-if="viewMode === 'plan'" class="text-xs text-slate-400 mt-1 truncate">
+                                {{ tripDateRange || '請在旅程設定中選擇日期與天數' }}
+                            </p>
+                            <p v-if="viewMode === 'plan' && daysToTrip !== null" class="text-[11px] text-teal-200 mt-0.5">
+                                距離出發還有 <span class="font-semibold">{{ daysToTrip }}</span> 天
+                            </p>
+                        </div>
                     </div>
-                    <p class="text-xs text-slate-400 mt-1 truncate">
-                        {{ tripDateRange || '請在旅程設定中選擇日期與天數' }}
-                    </p>
-                    <p v-if="daysToTrip !== null" class="text-[11px] text-teal-200 mt-0.5">
-                        <span v-if="daysToTrip > 0">距離出發還有 <span class="font-bold">{{ daysToTrip }}</span> 天</span>
-                        <span v-else-if="daysToTrip === 0">今天就是出發日 🚀</span>
-                        <span v-else>旅程已開始第 <span class="font-bold">{{ Math.abs(daysToTrip) + 1 }}</span> 天</span>
-                    </p>
                 </div>
+
+                <!-- 右側保留空位，讓中間可以真正置中 -->
+                <div class="w-8"></div>
             </div>
 
             <!-- 日期列 -->
-            <div class="border-t border-slate-800/80 pt-2 pb-3 px-2 bg-slate-900/90">
-                <div class="flex overflow-x-auto hide-scroll space-x-3 snap-x">
-                <div
-                    v-for="(day, index) in days"
-                    :key="index"
-                    @click="currentDayIdx = index"
-                    class="snap-center shrink-0 flex flex-col items-center justify-center w-[4.2rem] h-16 rounded-xl cursor-pointer transition-all border"
-                    :class="currentDayIdx === index
-                        ? 'bg-emerald-500/90 text-slate-900 border-emerald-300 shadow-lg scale-105'
-                        : 'bg-slate-800/80 text-slate-200 border-slate-700 hover:bg-slate-700'">
-                    <span class="text-[11px] font-medium opacity-80">{{ day.shortDate }}</span>
-                    <span class="text-lg font-bold">D{{ index + 1 }}</span>
-                </div>
-                <button
-                    @click="addDay"
-                    class="shrink-0 w-14 h-16 rounded-xl flex items-center justify-center border border-dashed border-slate-600 text-slate-300 hover:border-emerald-300 hover:text-emerald-200 transition">
-                    <i class="ph-bold ph-plus"></i>
-                </button>
-                </div>
-            </div>
-  
-        </header>        
-
-        <!-- Main Content -->
-        <main class="flex-1 overflow-y-auto bg-gradient-to-b from-slate-900 via-slate-900 to-slate-950 relative hide-scroll pb-24">
-
-            <!-- 行程表 (Plan View) -->
-            <transition name="fade" mode="out-in">
-                <div v-if="viewMode === 'plan'" :key="currentDayIdx" class="p-4 space-y-6">
-                    <!-- 今日摘要 + 天氣 -->
-                    <div class="bg-slate-800/90 p-4 rounded-2xl shadow-sm border border-slate-700 flex justify-between items-start">
-                        <div class="flex-1 relative pt-0.5">
-                            <!-- 隱形日期選擇器 -->
-                            <input type="date" :value="currentDay.fullDate" @change="updateDate($event, currentDay)" class="absolute top-0 left-0 w-40 h-8 opacity-0 z-20 cursor-pointer">
-                            <!-- 日期顯示 -->
-                            <input
-                                v-model="currentDay.date"
-                                class="text-lg font-bold text-slate-50 bg-transparent border-none p-0 focus:ring-0 w-full relative z-10 pointer-events-none"
-                                placeholder="Day 1 (點擊設定)">
-                            <input
-                                v-model="currentDay.title"
-                                class="text-sm text-slate-300 bg-transparent border-b border-dashed border-slate-500 focus:border-teal-400 focus:outline-none w-full mt-1"
-                                placeholder="輸入當日主題 (例如：新宿逛街 / 河口湖一日遊)">
-                        </div>
-                        <!-- 天氣顯示 -->
-                        <div class="flex flex-col items-end pl-2">
-                            <div v-if="weatherDisplay" class="text-right">
-                                <div class="flex items-center justify-end gap-1 text-amber-300">
-                                    <i :class="['ph-duotone', weatherDisplay.icon, 'text-2xl']"></i>
-                                    <span class="text-xl font-bold font-mono whitespace-nowrap">{{ weatherDisplay.temp }}</span>
-                                </div>
-                                <div class="text-[10px] text-slate-400 flex items-center gap-1 justify-end mt-0.5">
-                                    <i :class="weatherDisplay.isForecast ? 'ph-bold ph-calendar' : 'ph-bold ph-map-pin'"></i>
-                                    {{ weatherDisplay.label }}
-                                </div>
-                            </div>
-                        </div>
+            <div class="border-t border-slate-800/80 bg-slate-900/90">
+                <div class="px-3 py-2 flex items-center justify-between gap-3 text-[11px] text-slate-300">
+                    <div class="flex items-center gap-1.5">
+                        <span class="inline-flex items-center justify-center w-5 h-5 rounded-full border border-teal-500 text-[11px] text-teal-300 font-bold">
+                            D{{ currentDayIdx + 1 }}
+                        </span>
+                        <span class="font-medium">{{ currentDay.shortDate || '未設定日期' }}</span>
+                        <span class="text-slate-500">·</span>
+                        <span class="text-slate-300">{{ currentDay.title || '旅程第 ' + (currentDayIdx + 1) + ' 天' }}</span>
                     </div>
-
-                    <!-- 航班卡片 (登機證樣式) -->
-                    <div>
-                        <div v-if="currentDay.flight" class="relative bg-gradient-to-r from-sky-600 via-blue-600 to-teal-500 rounded-2xl text-white shadow-lg overflow-hidden">
-                            <div class="absolute -left-3 top-1/2 -translate-y-1/2 w-6 h-6 bg-slate-900 rounded-full z-10"></div>
-                            <div class="absolute -right-3 top-1/2 -translate-y-1/2 w-6 h-6 bg-slate-900 rounded-full z-10"></div>
-                            <div class="p-4 relative z-0">
-                                <button @click="toggleFlightCard" class="absolute top-2 right-2 text-white/60 hover:text-white hover:bg-white/20 rounded-full p-1 transition">
-                                    <i class="ph-bold ph-x"></i>
-                                </button>
-                                <div class="flex justify-between items-center mb-1 pt-2">
-                                    <!-- 出發 -->
-                                    <div class="flex flex-col items-center w-1/3">
-                                        <input v-model="currentDay.flight.startTime" type="time" class="text-2xl font-black bg-transparent border-b border-white/40 w-full text-center text-white placeholder-white/50 focus:outline-none focus:border-white font-mono p-0">
-                                        <div class="text-[9px] opacity-70 mt-1">起飛 (當地時間)</div>
-                                        <input v-model="currentDay.flight.startAirport" class="text-sm font-bold opacity-90 bg-transparent border-none text-center w-full text-emerald-100 placeholder-white/50 focus:ring-0 uppercase p-0" placeholder="TPE">
-                                    </div>
-                                    <!-- 資訊 -->
-                                    <div class="flex flex-col items-center justify-center w-1/3 px-2">
-                                        <i class="ph-fill ph-airplane text-2xl mb-1 transform rotate-90"></i>
-                                        <input v-model="currentDay.flight.number" class="text-[10px] font-mono tracking-widest opacity-80 bg-transparent border-none text-center w-full text-white placeholder-white/50 focus:ring-0 uppercase p-0" placeholder="BR198">
-                                        <div class="w-full h-0.5 bg-white/40 rounded-full mt-1"></div>
-                                    </div>
-                                    <!-- 抵達 -->
-                                    <div class="flex flex-col items-center w-1/3">
-                                        <input v-model="currentDay.flight.endTime" type="time" class="text-2xl font-black bg-transparent border-b border-white/40 w-full text-center text-white placeholder-white/50 focus:outline-none focus:border-white font-mono p-0">
-                                        <div class="relative w-full mt-0.5">
-                                            <select v-model="currentDay.flight.arrivalOffset" class="appearance-none bg-black/30 text-white text-[9px] rounded border-none w-full py-0.5 px-1 text-center focus:ring-0 cursor-pointer hover:bg-black/40">
-                                                <option value="0" class="text-slate-800">同日抵達</option>
-                                                <option value="1" class="text-slate-800">+1天 (隔日)</option>
-                                                <option value="-1" class="text-slate-800">-1天 (前日)</option>
-                                            </select>
-                                            <div v-if="currentDay.flight.arrivalOffset != 0" class="absolute -top-8 right-0 bg-red-500 text-white text-[9px] px-1.5 py-0.5 rounded shadow font-bold animate-pulse">
-                                                {{ currentDay.flight.arrivalOffset > 0 ? '+1' : '-1' }}
-                                            </div>
-                                        </div>
-                                        <input v-model="currentDay.flight.endAirport" class="text-sm font-bold opacity-90 bg-transparent border-none text-center w-full text-emerald-100 placeholder-white/50 focus:ring-0 uppercase p-0" placeholder="NRT">
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+                    <div class="flex items-center gap-2">
                         <button
-                            v-else
-                            @click="toggleFlightCard"
-                            class="mt-1 w-full py-3 border border-dashed border-slate-600 rounded-2xl text-slate-300 hover:border-teal-400 hover:text-teal-200 hover:bg-slate-800/70 transition flex items-center justify-center gap-2 group">
-                            <i class="ph-bold ph-airplane-tilt text-lg group-hover:scale-110 transition-transform"></i>
-                            <span class="text-sm font-bold">新增當日航班資訊</span>
+                                v-for="(d, idx) in days"
+                                :key="idx"
+                                @click="currentDayIdx = idx"
+                                class="px-1.5 py-0.5 rounded-full border text-[10px] transition-all"
+                                :class="idx === currentDayIdx
+                                    ? 'border-teal-400 bg-teal-500/20 text-teal-200'
+                                    : 'border-slate-700 bg-slate-900 text-slate-400 hover:border-teal-500/80 hover:text-teal-200'">
+                            D{{ idx + 1 }}
                         </button>
                     </div>
+                </div>
+            </div>
+        </header>
 
-                    <!-- 行程 Timeline -->
-                    <div class="relative pl-4 border-l border-slate-700 space-y-6">
+        <!-- Content -->
+        <main class="flex-1 overflow-y-auto scrollbar-thin bg-gradient-to-b from-slate-950 via-slate-950 to-slate-900">
+            <!-- viewMode 切換 -->
+            <div class="px-4 pt-3 pb-2">
+                <div class="inline-flex bg-slate-900/90 border border-slate-700 rounded-2xl p-0.5 text-xs shadow-lg">
+                    <button
+                            @click="viewMode = 'plan'"
+                            class="flex items-center gap-1 px-3 py-1.5 rounded-2xl transition-all"
+                            :class="viewMode === 'plan' ? 'active-tab' : 'text-slate-300 hover:bg-slate-800/80'">
+                        <i class="ph-bold ph-calendar-check text-sm"></i>
+                        行程
+                    </button>
+                    <button
+                            @click="viewMode = 'money'"
+                            class="flex items-center gap-1 px-3 py-1.5 rounded-2xl transition-all"
+                            :class="viewMode === 'money' ? 'active-tab' : 'text-slate-300 hover:bg-slate-800/80'">
+                        <i class="ph-bold ph-wallet text-sm"></i>
+                        分帳
+                    </button>
+                    <button
+                            @click="viewMode = 'checklist'"
+                            class="flex items-center gap-1 px-3 py-1.5 rounded-2xl transition-all"
+                            :class="viewMode === 'checklist' ? 'active-tab' : 'text-slate-300 hover:bg-slate-800/80'">
+                        <i class="ph-bold ph-check-square-offset text-sm"></i>
+                        清單
+                    </button>
+                    <button
+                            @click="viewMode = 'translate'"
+                            class="flex items-center gap-1 px-3 py-1.5 rounded-2xl transition-all"
+                            :class="viewMode === 'translate' ? 'active-tab' : 'text-slate-300 hover:bg-slate-800/80'">
+                        <i class="ph-bold ph-translate text-sm"></i>
+                        翻譯
+                    </button>
+                </div>
+            </div>
+
+            <!-- 行程頁 -->
+            <section v-if="viewMode === 'plan'" class="px-4 pb-6 space-y-4">
+                <!-- 今日摘要 + 天氣 -->
+                <div class="grid grid-cols-1 md:grid-cols-[2fr,1.4fr] gap-3">
+                    <!-- 摘要卡 -->
+                    <div class="card-glass rounded-2xl border border-sky-800/70 p-4 shadow-lg">
+                        <div class="flex items-center justify-between mb-2">
+                            <div class="flex items-center gap-2">
+                                <div class="w-8 h-8 rounded-full bg-gradient-to-br from-sky-400 to-cyan-500 flex items-center justify-center shadow-lg shadow-sky-500/40">
+                                    <i class="ph-bold ph-sun-dim text-slate-950 text-lg"></i>
+                                </div>
+                                <div>
+                                    <h2 class="text-sm font-semibold text-sky-100">今日重點</h2>
+                                    <p class="text-[11px] text-slate-400">
+                                        幫你把今天的行程、天氣與預算抓在一起看
+                                    </p>
+                                </div>
+                            </div>
+                            <button
+                                    @click="showSetup = true"
+                                    class="flex items-center gap-1 text-[11px] text-slate-300 hover:text-sky-300">
+                                <i class="ph-bold ph-gear text-xs"></i>
+                                旅程設定
+                            </button>
+                        </div>
+
+                        <div class="grid grid-cols-3 gap-2 mt-2 text-[11px] text-slate-200">
+                            <div class="bg-slate-900/70 rounded-xl px-3 py-2 border border-slate-700/90">
+                                <div class="flex items-center justify-between mb-1">
+                                    <span class="text-slate-400 flex items-center gap-1">
+                                        <i class="ph-bold ph-map-pin-line text-[13px] text-sky-300"></i>
+                                        目的地
+                                    </span>
+                                </div>
+                                <p class="text-xs font-semibold text-slate-100 truncate">
+                                    {{ setup.destination || '尚未設定' }}
+                                </p>
+                                <p class="text-[10px] text-slate-500 mt-0.5">
+                                    {{ setup.countryNote || '可在設定中填寫備註' }}
+                                </p>
+                            </div>
+
+                            <div class="bg-slate-900/70 rounded-xl px-3 py-2 border border-slate-700/90">
+                                <div class="flex items-center justify-between mb-1">
+                                    <span class="text-slate-400 flex items-center gap-1">
+                                        <i class="ph-bold ph-cloud-sun text-[13px] text-amber-300"></i>
+                                        天氣
+                                    </span>
+                                    <button
+                                            @click="fetchWeather"
+                                            class="text-[10px] text-slate-400 hover:text-amber-300">
+                                        刷新
+                                    </button>
+                                </div>
+                                <div v-if="weather.loading" class="text-[10px] text-slate-400">
+                                    讀取中…
+                                </div>
+                                <div v-else-if="weather.error" class="text-[10px] text-rose-400">
+                                    {{ weather.error }}
+                                </div>
+                                <div v-else class="space-y-1">
+                                    <p class="text-xs font-semibold">
+                                        {{ weather.summary || '尚未取得' }}
+                                    </p>
+                                    <p class="text-[10px] text-slate-400">
+                                        {{ weather.tempRange || '' }}
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div class="bg-slate-900/70 rounded-xl px-3 py-2 border border-slate-700/90">
+                                <div class="flex items-center justify-between mb-1">
+                                    <span class="text-slate-400 flex items-center gap-1">
+                                        <i class="ph-bold ph-wallet text-[13px] text-emerald-300"></i>
+                                        預算
+                                    </span>
+                                    <button
+                                            @click="viewMode = 'money'"
+                                            class="text-[10px] text-slate-400 hover:text-emerald-300">
+                                        看分帳
+                                    </button>
+                                </div>
+                                <p class="text-xs">
+                                    今日預算：
+                                    <span class="font-semibold text-emerald-300">{{ dailyBudgetDisplay }}</span>
+                                </p>
+                                <p class="text-[10px] text-slate-400 mt-0.5">
+                                    已登記花費：
+                                    <span class="font-semibold text-rose-300">{{ todaySpentDisplay }}</span>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 小提醒卡
+                    <div class="card-glass rounded-2xl border border-emerald-700/60 p-4 shadow-lg">
+                        <div class="flex items-center gap-2 mb-2">
+                            <div class="w-8 h-8 rounded-full floating-badge flex items-center justify-center">
+                                <i class="ph-bold ph-lightning text-white text-lg"></i>
+                            </div>
+                            <div>
+                                <h3 class="text-sm font-semibold text-emerald-100">小幫手建議</h3>
+                                <p class="text-[11px] text-emerald-100/80">
+                                    旅程中想到的雜事可以丟到清單或翻譯區先記下
+                                </p>
+                            </div>
+                        </div>
+                        <ul class="text-[11px] text-slate-200 space-y-1 list-disc list-inside">
+                            <li>行程卡片可以拖曳排序，長按左側時間圓點即可調整順序</li>
+                            <li>每一個卡片都可以設定地點、備註，或用「附近小幫手」找吃的</li>
+                            <li>分帳區會自動幫你算每個人多付 / 少付多少</li>
+                        </ul>
+                    </div> -->
+                </div>
+
+                <!-- 行程 Timeline -->
+                <div class="mt-3 bg-slate-950/80 rounded-2xl border border-slate-800/80 p-3 max-h-[420px] overflow-y-auto scrollbar-thin">
+                    <div class="flex items-center justify-between mb-2">
+                        <h2 class="text-xs font-semibold tracking-wide text-slate-200 flex items-center gap-1.5">
+                            <i class="ph-bold ph-timer text-sky-300 text-sm"></i>
+                            今日行程
+                        </h2>
+                        <div class="flex items-center gap-2">
+                            <button
+                                    @click="addItem"
+                                    class="text-[11px] px-2 py-1 rounded-full bg-sky-900/50 border border-sky-500/80 text-sky-100 hover:bg-sky-800">
+                                <i class="ph-bold ph-plus text-xs"></i>
+                                新增行程
+                            </button>
+                            <button
+                                    @click="clearDay"
+                                    class="text-[11px] px-2 py-1 rounded-full bg-rose-950/60 border border-rose-500/80 text-rose-100 hover:bg-rose-900">
+                                <i class="ph-bold ph-trash text-xs"></i>
+                                清空
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="space-y-4">
+                        <div v-if="!currentDay.items.length" class="text-center py-8 text-[12px] text-slate-500">
+                            還沒有安排行程，先新增一個吧！
+                        </div>
+
+                        <!-- 單一行程項目 -->
                         <div
-                            v-for="(item, idx) in currentDay.items"
-                            :key="idx"
-                            class="relative group">
-                            <!-- 節點 -->
-                            <div class="absolute -left-[21px] top-3 w-3 h-3 rounded-full border-2 border-slate-900 shadow-sm" :class="getDotColor(item.type)"></div>
+                                v-for="(item, idx) in currentDay.items"
+                                :key="idx"
+                                class="flex gap-3">
 
-                            <div class="bg-slate-800/90 p-3 rounded-xl shadow-sm border border-slate-700 hover:shadow-lg transition-shadow">
-                                <div class="grid grid-cols-[auto,1fr,auto] gap-3 items-start">
-                                    <!-- 時間 + 類別 -->
-                                    <div class="flex flex-col items-center w-20 gap-2">
-                                        <div class="relative flex flex-col items-center justify-center bg-slate-900/80 border border-slate-700 rounded-xl p-1 w-full h-16 cursor-pointer hover:bg-teal-950 hover:border-teal-500/60 transition group/time">
-                                            <span class="text-[10px] font-medium text-slate-400 group-hover/time:text-teal-300">{{ getTimePeriod(item.time) }}</span>
-                                            <span class="text-xl font-bold text-slate-50 group-hover/time:text-teal-200 leading-none font-mono tracking-tight">{{ item.time || '--:--' }}</span>
-                                            <input v-model="item.time" type="time" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10">
-                                        </div>
-                                        <select v-model="item.type" class="text-[10px] bg-slate-900 border border-slate-700 rounded-md py-1 px-1 w-full text-center text-slate-100">
-                                            <option value="spot">📍 景點</option>
-                                            <option value="food">🍴 美食</option>
-                                            <option value="shop">🛍️ 購物</option>
-                                            <option value="transport">🚇 交通</option>
-                                            <option value="flight">✈️ 航班</option>
-                                        </select>
-                                    </div>
+                            <!-- 時間軸左側 -->
+                            <div class="flex flex-col items-center w-10 mt-1">
+                                <div class="timeline-dot cursor-grab active:cursor-grabbing"></div>
+                                <div v-if="idx !== currentDay.items.length - 1" class="flex-1 w-[2px] bg-gradient-to-b from-sky-500/60 via-sky-500/20 to-transparent mt-1"></div>
+                            </div>
 
+                            <!-- 右側卡片 -->
+                            <div class="flex-1 bg-slate-900/80 rounded-2xl border border-slate-700/80 p-3 shadow-sm hover:border-sky-500/60 transition-all">
+                                <div class="flex items-start justify-between gap-2">
                                     <!-- 內容 -->
                                     <div class="flex-1 min-w-0 pt-1 space-y-1">
-                                        <input v-model="item.activity" class="block w-full font-bold text-slate-50 bg-transparent border-none p-0 focus:ring-0" placeholder="行程名稱...">
-                                        <div class="flex items-center gap-1">
-                                            <i class="ph-fill ph-map-pin text-teal-400 text-xs"></i>
-                                            <input v-model="item.location" class="flex-1 text-xs text-slate-300 bg-transparent border-none p-0 focus:ring-0 truncate" placeholder="輸入地點 (例如: 新宿站、淺草寺)">
-                                        </div>
-                                        <div class="flex items-center gap-1">
-                                            <i class="ph-bold ph-info text-orange-400 text-xs"></i>
-                                            <input v-model="item.note" class="flex-1 text-xs text-orange-200/90 bg-transparent border-none p-0 focus:ring-0 truncate" placeholder="備註 (例如: 需預約、交通方式)">
+                                        <div class="flex items-center gap-2 mb-1">
+                                            <input
+                                                    v-model="item.time"
+                                                    placeholder="時間 (例如 09:30)"
+                                                    class="w-24 text-[11px] bg-slate-950/80 border border-slate-700 rounded-full px-2 py-1 text-slate-100 focus:outline-none focus:border-sky-500"
+                                            />
+                                            <select
+                                                    v-model="item.type"
+                                                    class="text-[11px] bg-slate-950 border border-slate-700 rounded-full px-2 py-1 text-slate-100 focus:outline-none focus:border-sky-500">
+                                                <option value="spot">景點</option>
+                                                <option value="food">美食</option>
+                                                <option value="shop">購物</option>
+                                                <option value="transport">移動</option>
+                                                <option value="other">其他</option>
+                                            </select>
                                         </div>
 
-                                        <!-- 新增：交通方式 -->
-                                        <div class="flex items-center gap-1 mt-1">
-                                            <i class="ph-bold ph-train text-sky-400 text-xs"></i>
+                                        <div class="flex items-center gap-1">
+                                            <i class="ph-bold ph-note-pencil text-sky-300 text-xs"></i>
                                             <input
-                                                v-model="item.transport"
-                                                class="flex-1 text-xs text-slate-300 bg-transparent border-none p-0 focus:ring-0 truncate"
-                                                placeholder="從上一個地點到這裡的交通方式 (電車 / 步行 / 巴士)">
+                                                    v-model="item.activity"
+                                                    placeholder="要做什麼？（例如：逛淺草寺、奈良餵鹿）"
+                                                    class="flex-1 text-xs bg-transparent input-underline text-slate-100 focus:outline-none"
+                                            />
                                         </div>
 
-                                        <!-- 新增：預估所需時間 -->
                                         <div class="flex items-center gap-1">
-                                            <i class="ph-bold ph-clock text-sky-300 text-xs"></i>
+                                            <i class="ph-bold ph-map-pin-area text-emerald-300 text-xs"></i>
                                             <input
-                                                v-model="item.duration"
-                                                class="flex-1 text-xs text-slate-300 bg-transparent border-none p-0 focus:ring-0 truncate"
-                                                placeholder="預估時間，例如 15 分鐘">
+                                                    v-model="item.location"
+                                                    placeholder="地點（建議寫成 Google Map 上的名稱方便查）"
+                                                    class="flex-1 text-xs bg-transparent input-underline text-slate-200 focus:outline-none"
+                                            />
+                                        </div>
+
+                                        <div class="flex items-center gap-1">
+                                            <i class="ph-bold ph-info text-indigo-300 text-xs"></i>
+                                            <input
+                                                    v-model="item.note"
+                                                    placeholder="備註（例如：記得先預約 / 可退稅 / 拍照好位置）"
+                                                    class="flex-1 text-[11px] bg-transparent input-underline text-slate-300 focus:outline-none"
+                                            />
+                                        </div>
+
+                                        <!-- 交通方式 & 從上一個地點過來的時間 -->
+                                        <div v-if="idx > 0" class="mt-2 p-2 bg-slate-900/70 rounded-lg border border-slate-700">
+                                            <div class="flex items-center justify-between gap-2 mb-1">
+                                                <div class="flex items-center gap-1 text-[11px] text-slate-300">
+                                                    <i class="ph-bold ph-route"></i>
+                                                    <span>從上一個地點過來</span>
+                                                </div>
+                                                <button
+                                                        @click="estimateTravelTime(idx)"
+                                                        class="text-[10px] px-2 py-1 rounded-full border border-teal-500/60 text-teal-200 hover:bg-teal-600/20">
+                                                    自動估時間
+                                                </button>
+                                            </div>
+                                            <div class="flex items-center gap-2">
+                                                <select
+                                                        v-model="item.transportMode"
+                                                        class="text-[11px] bg-slate-950 border border-slate-700 rounded-md py-1 px-2 text-slate-100">
+                                                    <option value="walk">🚶‍♂️ 走路</option>
+                                                    <option value="train">🚆 電車 / 地鐵</option>
+                                                    <option value="bus">🚌 公車</option>
+                                                    <option value="taxi">🚕 計程車</option>
+                                                </select>
+                                                <input
+                                                        v-model="item.travelTimeText"
+                                                        class="flex-1 text-[11px] text-slate-200 bg-transparent border-b border-dashed border-slate-600 focus:outline-none py-0.5"
+                                                        placeholder="例如：約 15 分鐘">
+                                            </div>
+                                            <p class="mt-1 text-[10px] text-slate-500">
+                                                * 估算時間僅供參考，實際依當天交通情況為主。
+                                            </p>
                                         </div>
 
                                         <!-- 美食推薦 -->
-                                        <div v-if="item.type === 'food'" class="mt-2 p-2 bg-amber-500/10 rounded-lg border border-amber-500/30">
-                                            <div class="flex items-center justify-between mb-1">
-                                                <p class="text-[10px] font-bold text-amber-300 flex items-center gap-1">
-                                                    <i class="ph-fill ph-fork-knife"></i> 美食推薦
-                                                </p>
-                                                <button
+                                        <div v-if="item.type === 'food'" class="mt-2">
+                                            <button
                                                     @click="searchNearby(item, idx)"
-                                                    class="text-[10px] text-teal-200 hover:text-teal-50 flex items-center gap-1 bg-slate-900/80 px-2 py-0.5 rounded border border-teal-500/40 shadow-sm"
-                                                    :disabled="!item.location">
-                                                    <i v-if="isSearchingRecs && searchTargetIndex === `${currentDayIdx}-${idx}`" class="ph-bold ph-spinner animate-spin"></i>
-                                                    <i v-else class="ph-bold ph-magnifying-glass"></i>
-                                                    搜尋
-                                                </button>
+                                                    class="text-[11px] px-2 py-1 rounded-full border border-amber-400/70 text-amber-200 bg-amber-900/40 hover:bg-amber-800/70">
+                                                <i class="ph-bold ph-fork-knife text-xs mr-0.5"></i>
+                                                附近美食小幫手
+                                            </button>
+
+                                            <div v-if="isSearchingRecs && searchTargetIndex === idx" class="mt-1 text-[10px] text-amber-200 flex items-center gap-1">
+                                                <i class="ph-bold ph-spinner-gap animate-spin"></i>
+                                                幫你找吃的中…
                                             </div>
-                                            
-                                            <div v-if="recommendationsMap[`${currentDayIdx}-${idx}`] && recommendationsMap[`${currentDayIdx}-${idx}`].length > 0" class="flex flex-wrap gap-2 mt-1">
-                                                <button
-                                                    v-for="rec in recommendationsMap[`${currentDayIdx}-${idx}`]"
-                                                    :key="rec.name"
-                                                    @click="applyRecommendation(item, rec)"
-                                                    class="text-[10px] px-2 py-1.5 bg-slate-900/80 border border-amber-300/40 rounded-lg text-slate-100 hover:bg-amber-500 hover:text-slate-900 hover:border-amber-500 transition shadow-sm flex flex-col items-start gap-0.5 max-w-[140px] truncate">
-                                                    <span class="font-bold truncate w-full text-left">{{ rec.name }}</span>
-                                                </button>
-                                            </div>
-                                            <div v-else-if="!item.location" class="text-[9px] text-slate-400 italic">
-                                                請先輸入地點 (例如: 澀谷)，再點擊搜尋
+
+                                            <div v-if="recommendationsMap[idx]?.length" class="mt-2 space-y-1.5">
+                                                <div
+                                                        v-for="rec in recommendationsMap[idx]"
+                                                        :key="rec.place_id"
+                                                        class="bg-slate-900/90 border border-amber-500/40 rounded-xl px-2.5 py-1.5 text-[11px] text-slate-100 flex items-start justify-between gap-2">
+                                                    <div class="space-y-0.5">
+                                                        <div class="flex items-center gap-1.5">
+                                                            <span class="font-semibold text-amber-100 truncate max-w-[150px]">{{ rec.name }}</span>
+                                                            <span class="text-[10px] text-amber-300 bg-amber-900/60 border border-amber-500/40 rounded-full px-1.5 py-0.5">
+                                                                ★ {{ rec.rating || 'N/A' }}
+                                                            </span>
+                                                        </div>
+                                                        <p class="text-[10px] text-slate-400 truncate max-w-[200px]">
+                                                            {{ rec.vicinity || rec.address || '' }}
+                                                        </p>
+                                                    </div>
+                                                    <button
+                                                            @click="applyRecommendation(item, rec)"
+                                                            class="text-[10px] px-2 py-1 rounded-full bg-amber-500/90 text-slate-900 font-medium hover:bg-amber-400 flex-shrink-0">
+                                                        套用到行程
+                                                    </button>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
 
-                                    <!-- 操作 -->
-                                    <div class="flex flex-col gap-2 items-center pt-1">
-                                        <a :href="getGoogleMapLink(item.location)" target="_blank" class="text-teal-300 hover:bg-slate-900/70 p-1 rounded">
-                                            <i class="ph-bold ph-navigation-arrow"></i>
-                                        </a>
-                                        <button @click="removeItem(idx)" class="text-red-300 hover:text-red-500 p-1 rounded">
-                                            <i class="ph-bold ph-trash"></i>
+                                    <!-- 右上角工具 -->
+                                    <div class="flex flex-col items-center gap-2 mt-1 ml-1">
+                                        <button
+                                                @click="duplicateItem(idx)"
+                                                class="w-7 h-7 rounded-full bg-slate-900 border border-slate-700/80 flex items-center justify-center text-slate-300 hover:border-sky-400 hover:text-sky-300">
+                                            <i class="ph-bold ph-copy text-xs"></i>
+                                        </button>
+                                        <button
+                                                @click="removeItem(idx)"
+                                                class="w-7 h-7 rounded-full bg-slate-900 border border-slate-700/80 flex items-center justify-center text-rose-300 hover:border-rose-400 hover:text-rose-200">
+                                            <i class="ph-bold ph-trash text-xs"></i>
                                         </button>
                                     </div>
                                 </div>
                             </div>
-                        </div>
-
-                        <button @click="addItem" class="flex items-center gap-2 text-teal-300 hover:text-teal-100 text-sm font-medium px-2 py-1">
-                            <div class="w-2 h-2 bg-teal-400 rounded-full"></div>
-                            <i class="ph-bold ph-plus"></i> 新增行程
-                        </button>
-                    </div>
-
-                    <div class="pt-4 border-t border-slate-800 text-center">
-                        <button @click="removeCurrentDay" class="text-xs text-red-300 hover:text-red-500 flex items-center justify-center gap-1 mx-auto">
-                            <i class="ph-bold ph-trash"></i> 刪除這一天
-                        </button>
+                        </div> <!-- 單一行程項目 end -->
                     </div>
                 </div>
-            </transition>
+            </section>
 
-            <!-- 地圖視圖 -->
-            <div v-if="viewMode === 'map'" class="h-full flex flex-col relative">
-                <div id="map" class="flex-1 w-full h-full bg-slate-800 z-0"></div>
-                <div v-if="isMapLoading" class="absolute inset-0 bg-slate-900/70 backdrop-blur-sm z-10 flex flex-col items-center justify-center text-teal-200">
-                    <i class="ph-duotone ph-spinner animate-spin text-4xl mb-2"></i>
-                    <span class="text-xs font-bold">讀取中...</span>
-                </div>
-                <div class="absolute bottom-24 left-4 right-4 bg-slate-900/85 backdrop-blur rounded-xl p-3 shadow-lg border border-slate-700 z-10 flex justify-between items-center">
-                    <div class="text-sm font-bold text-slate-100">📍 {{ currentDay.items.filter(i=>i.location).length }} 個地點</div>
-                    <div class="flex gap-2">
-                        <button @click="initMap" class="p-2 bg-slate-800 text-teal-200 rounded-lg border border-slate-600 hover:bg-slate-700">
-                            <i class="ph-bold ph-arrows-clockwise"></i>
-                        </button>
-                        <button @click="centerOnUser" class="p-2 bg-blue-500 text-white rounded-lg shadow-md hover:bg-blue-400">
-                            <i class="ph-bold ph-crosshair"></i>
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-            <!-- 分帳視圖 -->
-            <div v-if="viewMode === 'money'" class="p-4 space-y-4">
-                <div class="bg-gradient-to-br from-teal-700 via-emerald-600 to-cyan-600 text-white rounded-2xl p-6 shadow-lg text-center relative">
-                    <div class="absolute top-4 right-4 flex flex-col items-end">
-                        <label class="text-[10px] text-teal-100 mb-1">匯率 ({{ currencyLabel }})</label>
-                        <input v-model.number="exchangeRate" type="number" step="0.001" class="w-20 text-right text-xs text-teal-900 rounded px-1 py-0.5">
-                    </div>
-                    <div class="text-sm opacity-80 mb-1">總支出 Total</div>
-                    <div class="text-4xl font-bold font-mono">{{ currencySymbol }} {{ totalExpense.toLocaleString() }}</div>
-                    <div class="text-lg font-bold text-teal-100 mt-1">
-                        ≈ NT$ {{ Math.round(totalExpense * exchangeRate).toLocaleString() }}
-                    </div>
-                </div>
-
-                <!-- 快速換算 -->
-                <div class="bg-slate-800/90 rounded-xl shadow-sm p-4 border border-slate-700">
-                    <div class="flex items-center justify-between mb-2">
-                        <div class="text-xs font-bold text-slate-300 flex items-center gap-1">
-                            <i class="ph-bold ph-currency-circle-dollar"></i> 快速匯率換算
-                        </div>
-                        <div class="text-[10px] text-slate-400">
-                            {{ currencySymbol }} → NT$
-                        </div>
-                    </div>
-                    <div class="flex gap-2 items-center">
-                        <input
-                            v-model.number="convertAmount"
-                            type="number"
-                            :placeholder="currencySymbol + ' 金額'"
-                            class="w-1/2 bg-slate-900 border border-slate-600 rounded-lg text-sm px-3 py-2 font-mono text-slate-100">
-                        <span class="text-slate-300 text-xs">≈</span>
-                        <div class="flex-1 bg-slate-900 border border-slate-600 rounded-lg px-3 py-2 flex items-center justify-between">
-                            <span class="text-xs text-slate-400">NT$</span>
-                            <span class="font-mono font-bold text-emerald-300">{{ convertToTwd.toLocaleString() }}</span>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- 成員設定 -->
-                <div class="bg-slate-800/90 p-4 rounded-xl border border-slate-700 shadow-sm">
-                    <div class="text-xs font-bold text-slate-300 mb-2">分帳成員 (用逗號分隔)</div>
-                    <input v-model="participantsStr" @change="updateParticipants" class="w-full text-sm bg-slate-900 rounded px-2 py-1 border border-slate-600 text-slate-100" placeholder="例如: 我, 朋友A, 朋友B">
-                </div>
-
-                <div class="grid grid-cols-2 gap-2">
-                    <div v-for="p in participants" :key="p" class="bg-slate-800/90 p-3 rounded-xl border border-slate-700 text-center shadow-sm">
-                        <div class="text-xs text-slate-400 mb-1">{{ p }} 墊付</div>
-                        <div class="text-sm font-bold text-teal-300">{{ currencySymbol }}{{ paidByPerson[p]?.toLocaleString() || 0 }}</div>
-                    </div>
-                </div>
-
-                <div v-if="settlementPlan.length > 0" class="bg-emerald-900/40 rounded-xl p-4 border border-emerald-500/40">
-                    <h3 class="text-xs font-bold text-emerald-200 uppercase tracking-wide mb-3 flex items-center gap-1">
-                        <i class="ph-bold ph-handshake"></i> 結帳建議
-                    </h3>
-                    <div class="space-y-2">
-                        <div v-for="(plan, idx) in settlementPlan" :key="idx" class="flex items-center justify-between text-sm bg-slate-900/80 p-2 rounded-lg shadow-sm border border-slate-700">
-                            <span class="font-bold text-slate-100">
-                                {{ plan.from }} <i class="ph-bold ph-arrow-right text-xs"></i> {{ plan.to }}
-                            </span>
-                            <span class="font-mono font-bold text-emerald-300">{{ currencySymbol }}{{ plan.amount.toLocaleString() }}</span>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="bg-slate-800/90 rounded-xl shadow-sm p-4 border border-slate-700">
-                    <div class="flex gap-2 mb-2">
-                        <input v-model="newExpense.item" placeholder="項目" class="w-[65%] bg-slate-900 border-none rounded-lg text-sm px-3 py-2 text-slate-100">
-                        <select v-model="newExpense.payer" class="flex-1 bg-slate-900 border-none rounded-lg text-sm px-2 py-2 min-w-0 text-slate-100">
-                            <option v-for="p in participants" :value="p">{{ p }}</option>
-                        </select>
-                    </div>
-                    <div class="flex gap-2">
-                        <input v-model.number="newExpense.amount" type="number" :placeholder="currencySymbol + ' 金額'" class="w-full bg-slate-900 border-none rounded-lg text-sm pl-3 pr-3 py-2 font-mono text-slate-100">
-                        <button @click="addExpense" class="bg-teal-600 hover:bg-teal-500 text-white px-4 py-2 rounded-lg font-bold">
-                            <i class="ph-bold ph-plus"></i>
-                        </button>
-                    </div>
-                </div>
-
-                <div class="space-y-3">
-                    <div v-for="(exp, idx) in expenses" :key="idx" class="flex justify-between items-center bg-slate-800/90 p-3 rounded-xl border border-slate-700 shadow-sm">
-                        <div class="flex items-center gap-3">
-                            <div class="w-8 h-8 rounded-full bg-teal-900 flex items-center justify-center text-teal-300 text-xs font-bold">
-                                {{ exp.payer.charAt(0) }}
-                            </div>
-                            <div>
-                                <div class="font-bold text-slate-100 text-sm">{{ exp.item }}</div>
-                            </div>
-                        </div>
-                        <div class="flex items-center gap-3">
-                            <span class="font-mono font-bold text-slate-100">{{ currencySymbol }}{{ exp.amount.toLocaleString() }}</span>
-                            <button @click="removeExpense(idx)" class="text-slate-500 hover:text-red-400">
-                                <i class="ph-fill ph-x-circle"></i>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- 旅遊清單視圖 -->
-            <div v-if="viewMode === 'checklist'" class="p-4 space-y-4">
-                <div class="bg-slate-800/90 rounded-2xl p-4 border border-slate-700 shadow-sm flex items-center justify-between">
-                    <div>
-                        <div class="text-xs text-slate-300 mb-1 flex items-center gap-1">
-                            <i class="ph-bold ph-checks"></i> 旅遊清單完成度
-                        </div>
-                        <div class="text-lg font-bold text-slate-50">
-                            {{ checklistStats.done }} / {{ checklistStats.total }} 項
-                        </div>
-                    </div>
-                    <div class="flex flex-col items-end gap-1">
-                        <div class="w-24 h-2 rounded-full bg-slate-900 overflow-hidden">
-                            <div class="h-full bg-emerald-400" :style="{ width: checklistStats.percent + '%' }"></div>
-                        </div>
-                        <div class="text-xs text-emerald-200 font-mono">
-                            {{ checklistStats.percent }}%
-                        </div>
-                    </div>
-                </div>
-
-                <div v-for="section in checklistSections" :key="section.id" class="bg-slate-800/90 rounded-2xl p-4 border border-slate-700 shadow-sm">
-                    <div class="flex items-center justify-between mb-3">
-                        <div class="flex items-center gap-2">
-                            <div class="w-8 h-8 rounded-full bg-slate-900 flex items-center justify-center">
-                                <i :class="['ph-bold', section.icon, 'text-lg text-teal-300']"></i>
-                            </div>
-                            <div>
-                                <div class="text-sm font-bold text-slate-50">{{ section.title }}</div>
-                                <div class="text-[11px] text-slate-400">
-                                    {{ section.items.filter(i => i.text).length }} 項
+            <!-- 分帳頁 -->
+            <section v-if="viewMode === 'money'" class="px-4 pb-6 space-y-4">
+                <!-- 匯率 & 成員 -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div class="bg-slate-900/80 rounded-2xl border border-slate-800/80 p-4 space-y-2">
+                        <div class="flex items-center justify-between mb-1">
+                            <div class="flex items-center gap-2">
+                                <div class="w-8 h-8 rounded-full bg-gradient-to-br from-emerald-400 to-cyan-400 flex items-center justify-center shadow-lg shadow-emerald-400/40">
+                                    <i class="ph-bold ph-currency-circle-dollar text-slate-950 text-lg"></i>
+                                </div>
+                                <div>
+                                    <h2 class="text-sm font-semibold text-emerald-100">匯率設定</h2>
+                                    <p class="text-[11px] text-slate-400">
+                                        將當地貨幣換算成新台幣
+                                    </p>
                                 </div>
                             </div>
-                        </div>
-                        <button @click="addChecklistItem(section.id)" class="text-xs text-teal-300 hover:text-teal-100 flex items-center gap-1">
-                            <i class="ph-bold ph-plus-circle"></i> 新增
-                        </button>
-                    </div>
-
-                    <div class="space-y-2">
-                        <div
-                            v-for="(item, idx) in section.items"
-                            :key="idx"
-                            class="flex items-center gap-2 bg-slate-900/80 rounded-xl px-2 py-2 border border-slate-700">
                             <button
-                                @click="toggleChecklistItem(section.id, idx)"
-                                class="w-6 h-6 rounded-full flex items-center justify-center border"
-                                :class="item.done ? 'bg-emerald-500 border-emerald-400 text-slate-900' : 'border-slate-600 text-slate-500'">
-                                <i v-if="item.done" class="ph-bold ph-check text-xs"></i>
-                            </button>
-                            <input
-                                v-model="item.text"
-                                class="flex-1 bg-transparent border-none text-sm text-slate-100 focus:ring-0"
-                                :class="item.done ? 'line-through text-slate-500' : ''"
-                                placeholder="輸入事項，例如：確認護照有效期限">
-                            <button @click="removeChecklistItem(section.id, idx)" class="text-slate-500 hover:text-red-400">
-                                <i class="ph-bold ph-trash text-xs"></i>
+                                    @click="detectRate"
+                                    class="text-[11px] px-2 py-1 rounded-full border border-emerald-400/80 text-emerald-200 hover:bg-emerald-900/60">
+                                一鍵帶入建議匯率
                             </button>
                         </div>
-                        <div v-if="section.items.length === 0" class="text-[11px] text-slate-500 italic">
-                            還沒有項目，點右上角「新增」開始建立清單。
+
+                        <div class="flex items-center gap-2 mt-2">
+                            <input
+                                    v-model.number="exchangeRate.rate"
+                                    type="number"
+                                    step="0.01"
+                                    class="flex-1 bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-[13px] text-slate-100 focus:outline-none focus:border-emerald-500"
+                                    placeholder="1 當地貨幣 = 幾元台幣？"
+                            />
+                            <span class="text-[12px] text-slate-400">{{ exchangeRate.note || '例如：1 日圓 ≈ 0.23 TWD' }}</span>
+                        </div>
+                    </div>
+
+                    <!-- 成員設定 -->
+                    <div class="bg-slate-800/90 p-4 rounded-xl border border-slate-700 shadow-sm space-y-3">
+                        <div class="flex items-center justify-between">
+                            <div class="text-xs font-bold text-slate-300 flex items-center gap-1">
+                                <i class="ph-bold ph-users-three"></i>
+                                分帳成員
+                            </div>
+                            <div class="flex items-center gap-2 text-[11px] text-slate-400">
+                                <span>人數</span>
+                                <select
+                                        v-model.number="participantCount"
+                                        @change="updateParticipantCount"
+                                        class="bg-slate-900 border border-slate-600 rounded-lg px-2 py-1 text-xs text-slate-100">
+                                    <option v-for="n in 8" :key="n" :value="n">{{ n }} 人</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-2">
+                            <div v-for="(p, idx) in participants" :key="idx" class="flex items-center gap-2">
+                                <span class="text-[11px] text-slate-400 w-8 text-right">成員{{ idx + 1 }}</span>
+                                <input
+                                        v-model="participants[idx]"
+                                        @input="syncParticipantsStr"
+                                        class="flex-1 bg-slate-900 border border-slate-600 rounded-lg text-xs px-2 py-1 text-slate-100"
+                                        placeholder="輸入名稱">
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
 
-            <!-- 翻譯功能 -->
-            <div v-if="viewMode === 'translate'" class="p-6 h-full flex flex-col justify-center items-center">
-                <div class="text-center mb-8">
-                    <h2 class="text-2xl font-bold text-slate-50 mb-2">Google 翻譯捷徑</h2>
-                    <p class="text-sm text-slate-400">請選擇您需要的翻譯模式</p>
-                </div>
-                <div class="w-full mb-4">
-                    <a href="https://translate.google.com/?op=images" target="_blank" class="block w-full">
-                        <button class="w-full bg-gradient-to-br from-orange-400 to-red-500 text-white rounded-2xl p-6 shadow-lg active:scale-95 transition-transform relative overflow-hidden group">
-                            <div class="relative z-10 flex items-center justify-between">
-                                <div class="text-left">
-                                    <div class="text-xs opacity-80 mb-1 tracking-wider">菜單 / 看板</div>
-                                    <div class="text-2xl font-bold">照相翻譯 <i class="ph-bold ph-camera text-sm"></i></div>
-                                </div>
-                                <i class="ph-duotone ph-camera-plus text-3xl opacity-60 group-hover:opacity-100"></i>
+                <!-- 記帳 & 結算 -->
+                <div class="grid grid-cols-1 md:grid-cols-[1.2fr,1.1fr] gap-3">
+                    <!-- 記帳輸入 -->
+                    <div class="bg-slate-900/80 rounded-2xl border border-slate-800/80 p-4">
+                        <div class="flex items-center justify-between mb-2">
+                            <h2 class="text-sm font-semibold text-slate-100 flex items-center gap-1.5">
+                                <i class="ph-bold ph-notebook text-emerald-300 text-sm"></i>
+                                新增花費
+                            </h2>
+                            <span class="text-[11px] text-slate-400">
+                                單位：{{ exchangeRate.currency || '當地幣' }}
+                            </span>
+                        </div>
+
+                        <div class="space-y-2 text-[13px]">
+                            <input
+                                    v-model="newExpense.item"
+                                    class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-slate-100 focus:outline-none focus:border-emerald-500"
+                                    placeholder="用途（例如：晚餐、地鐵票、門票）"
+                            />
+                            <div class="flex gap-2">
+                                <input
+                                        v-model.number="newExpense.amount"
+                                        type="number"
+                                        class="flex-1 bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-slate-100 focus:outline-none focus:border-emerald-500"
+                                        placeholder="金額"
+                                />
+                                <select
+                                        v-model="newExpense.payer"
+                                        class="w-32 bg-slate-950 border border-slate-700 rounded-xl px-2 py-2 text-slate-100 text-[12px] focus:outline-none focus:border-emerald-500">
+                                    <option v-for="p in participants" :key="p" :value="p">
+                                        {{ p }} 付款
+                                    </option>
+                                </select>
                             </div>
-                        </button>
-                    </a>
-                </div>
-                <div class="w-full mb-4">
-                    <a :href="`https://translate.google.com/?sl=zh-TW&tl=${setup.langCode}&op=translate`" target="_blank" class="block w-full">
-                        <button class="w-full bg-gradient-to-br from-indigo-500 to-blue-600 text-white rounded-2xl p-6 shadow-lg active:scale-95 transition-transform relative overflow-hidden group">
-                            <div class="relative z-10 flex items-center justify-between">
-                                <div class="text-left">
-                                    <div class="text-xs opacity-80 mb-1 tracking-wider">我說中文 (轉{{ setup.langName }})</div>
-                                    <div class="text-2xl font-bold">
-                                        CH <i class="ph-bold ph-arrow-right text-sm"></i> {{ setup.langCode.toUpperCase() }}
+                            <div class="flex justify-end mt-1">
+                                <button
+                                        @click="addExpense"
+                                        class="px-3 py-1.5 text-xs rounded-full bg-emerald-500/90 text-slate-950 font-semibold hover:bg-emerald-400">
+                                    新增紀錄
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="mt-3">
+                            <h3 class="text-xs font-semibold text-slate-300 flex items-center gap-1 mb-1">
+                                <i class="ph-bold ph-clock-counter-clockwise text-slate-400"></i>
+                                花費列表
+                            </h3>
+                            <div class="max-h-48 overflow-y-auto scrollbar-thin space-y-1.5 text-[11px]">
+                                <div
+                                        v-for="(e, idx) in expenses"
+                                        :key="idx"
+                                        class="flex items-center justify-between bg-slate-950/80 border border-slate-700 rounded-xl px-2.5 py-1.5">
+                                    <div class="flex-1 min-w-0">
+                                        <div class="flex items-center justify-between">
+                                            <span class="font-medium text-slate-100 truncate">
+                                                {{ e.item }}
+                                            </span>
+                                            <span class="text-emerald-300 font-semibold ml-2">
+                                                {{ e.amount }} {{ exchangeRate.currency || '' }}
+                                            </span>
+                                        </div>
+                                        <p class="text-[10px] text-slate-400 mt-0.5">
+                                            {{ e.payer }} 付款 · 約 {{ (e.amount * (exchangeRate.rate || 0)).toFixed(0) }} TWD
+                                        </p>
                                     </div>
+                                    <button
+                                            @click="removeExpense(idx)"
+                                            class="ml-2 text-rose-300 hover:text-rose-200">
+                                        <i class="ph-bold ph-x text-xs"></i>
+                                    </button>
                                 </div>
-                                <i class="ph-duotone ph-arrow-square-out text-3xl opacity-60 group-hover:opacity-100"></i>
+                                <p v-if="!expenses.length" class="text-[11px] text-slate-500 text-center py-4">
+                                    目前還沒有任何花費紀錄
+                                </p>
                             </div>
-                        </button>
-                    </a>
-                </div>
-                <div class="w-full">
-                    <a :href="`https://translate.google.com/?sl=${setup.langCode}&tl=zh-TW&op=translate`" target="_blank" class="block w-full">
-                        <button class="w-full bg-slate-900 border-2 border-slate-600 text-slate-100 rounded-2xl p-6 shadow-sm active:scale-95 transition-transform relative overflow-hidden group hover:border-indigo-300">
-                            <div class="relative z-10 flex items-center justify-between">
-                                <div class="text-left">
-                                    <div class="text-xs text-slate-400 mb-1 tracking-wider">對方說{{ setup.langName }} (轉中文)</div>
-                                    <div class="text-2xl font-bold font-jp">
-                                        {{ setup.langCode.toUpperCase() }} <i class="ph-bold ph-arrow-right text-sm"></i> CH
-                                    </div>
+                        </div>
+                    </div>
+
+                    <!-- 結算結果 -->
+                    <div class="bg-slate-900/80 rounded-2xl border border-slate-800/80 p-4">
+                        <h2 class="text-sm font-semibold text-slate-100 mb-2 flex items-center gap-1.5">
+                            <i class="ph-bold ph-scales text-emerald-300 text-sm"></i>
+                            分帳結果
+                        </h2>
+                        <div class="grid grid-cols-2 gap-2 text-[11px] mb-3">
+                            <div class="bg-slate-950/80 rounded-xl border border-slate-700 px-3 py-2">
+                                <p class="text-slate-400 text-[10px]">總花費 (當地幣)</p>
+                                <p class="text-emerald-300 font-semibold text-sm">
+                                    {{ totalAmount }} {{ exchangeRate.currency || '' }}
+                                </p>
+                            </div>
+                            <div class="bg-slate-950/80 rounded-xl border border-slate-700 px-3 py-2">
+                                <p class="text-slate-400 text-[10px]">總花費 (新台幣)</p>
+                                <p class="text-emerald-300 font-semibold text-sm">
+                                    {{ totalTwd }} TWD
+                                </p>
+                            </div>
+                        </div>
+
+                        <div class="bg-slate-950/80 rounded-xl border border-slate-700 px-3 py-2 text-[11px] mb-3">
+                            <p class="text-slate-400 text-[10px] mb-1">每人應分攤：</p>
+                            <p class="text-slate-100">
+                                {{ perPersonLocal }} {{ exchangeRate.currency || '' }} ≈
+                                {{ perPersonTwd }} TWD
+                            </p>
+                        </div>
+
+                        <div class="space-y-1.5 text-[11px] max-h-40 overflow-y-auto scrollbar-thin">
+                            <div
+                                    v-for="p in participants"
+                                    :key="p"
+                                    class="bg-slate-950/80 rounded-xl border border-slate-700 px-3 py-2 flex items-center justify-between">
+                                <div>
+                                    <p class="font-semibold text-slate-100">{{ p }}</p>
+                                    <p class="text-[10px] text-slate-400">
+                                        實際支付：{{ paidByPerson[p] || 0 }} {{ exchangeRate.currency || '' }}
+                                    </p>
                                 </div>
-                                <i class="ph-duotone ph-arrow-square-out text-3xl text-slate-400 group-hover:text-indigo-500 transition-colors"></i>
+                                <div class="text-right">
+                                    <p
+                                            v-if="balance[p] > 1"
+                                            class="text-emerald-300 text-[11px] font-semibold">
+                                        多付 {{ balance[p].toFixed(1) }}，應拿回錢
+                                    </p>
+                                    <p
+                                            v-else-if="balance[p] < -1"
+                                            class="text-rose-300 text-[11px] font-semibold">
+                                        少付 {{ (-balance[p]).toFixed(1) }}，應補錢
+                                    </p>
+                                    <p v-else class="text-slate-400 text-[10px]">
+                                        大致平衡
+                                    </p>
+                                </div>
                             </div>
-                        </button>
-                    </a>
+                        </div>
+
+                        <div class="mt-3 text-[10px] text-slate-500">
+                            ※ 目前採平均分攤：所有花費平均分給每一位成員。
+                        </div>
+                    </div>
                 </div>
-            </div>
+            </section>
+
+            <!-- 清單頁 -->
+            <section v-if="viewMode === 'checklist'" class="px-4 pb-6 space-y-4">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div class="bg-slate-900/80 rounded-2xl border border-slate-800/80 p-4">
+                        <h2 class="text-sm font-semibold text-slate-100 mb-2 flex items-center gap-1.5">
+                            <i class="ph-bold ph-suitcase-simple text-sky-300 text-sm"></i>
+                            行李 / 必備物品
+                        </h2>
+                        <div class="space-y-2 text-[12px] max-h-64 overflow-y-auto scrollbar-thin">
+                            <div
+                                    v-for="(item, idx) in checklist.items"
+                                    :key="idx"
+                                    class="flex items-center gap-2 bg-slate-950/80 border border-slate-700 rounded-xl px-3 py-2">
+                                <input
+                                        type="checkbox"
+                                        v-model="item.done"
+                                        class="w-3.5 h-3.5 rounded border-slate-500 text-sky-400 focus:ring-0 focus:ring-offset-0"
+                                />
+                                <input
+                                        v-model="item.text"
+                                        class="flex-1 bg-transparent text-[12px] text-slate-100 focus:outline-none"
+                                        placeholder="例如：護照、充電器、雨傘"
+                                />
+                                <button
+                                        @click="checklist.items.splice(idx,1)"
+                                        class="text-rose-300 hover:text-rose-200">
+                                    <i class="ph-bold ph-x text-xs"></i>
+                                </button>
+                            </div>
+                            <button
+                                    @click="checklist.items.push({ text: '', done: false })"
+                                    class="w-full mt-1 py-1.5 text-[11px] rounded-full border border-slate-600 text-slate-200 bg-slate-950/80 hover:border-sky-500 hover:text-sky-200">
+                                新增項目
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="bg-slate-900/80 rounded-2xl border border-slate-800/80 p-4">
+                        <h2 class="text-sm font-semibold text-slate-100 mb-2 flex items-center gap-1.5">
+                            <i class="ph-bold ph-list-checks text-emerald-300 text-sm"></i>
+                            行程前 / 回國前檢查
+                        </h2>
+                        <div class="space-y-2 text-[12px] max-h-64 overflow-y-auto scrollbar-thin">
+                            <div
+                                    v-for="(item, idx) in checklist.todos"
+                                    :key="idx"
+                                    class="flex items-center gap-2 bg-slate-950/80 border border-slate-700 rounded-xl px-3 py-2">
+                                <input
+                                        type="checkbox"
+                                        v-model="item.done"
+                                        class="w-3.5 h-3.5 rounded border-slate-500 text-emerald-400 focus:ring-0 focus:ring-offset-0"
+                                />
+                                <input
+                                        v-model="item.text"
+                                        class="flex-1 bg-transparent text-[12px] text-slate-100 focus:outline-none"
+                                        placeholder="例如：確認護照到期、跟家人報備行程"
+                                />
+                                <button
+                                        @click="checklist.todos.splice(idx,1)"
+                                        class="text-rose-300 hover:text-rose-200">
+                                    <i class="ph-bold ph-x text-xs"></i>
+                                </button>
+                            </div>
+                            <button
+                                    @click="checklist.todos.push({ text: '', done: false })"
+                                    class="w-full mt-1 py-1.5 text-[11px] rounded-full border border-slate-600 text-slate-200 bg-slate-950/80 hover:border-emerald-500 hover:text-emerald-200">
+                                新增檢查項目
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 翻譯頁 -->
+            <section v-if="viewMode === 'translate'" class="px-4 pb-6 space-y-4">
+                <div class="bg-slate-900/80 rounded-2xl border border-slate-800/80 p-4">
+                    <h2 class="text-sm font-semibold text-slate-100 mb-2 flex items-center gap-1.5">
+                        <i class="ph-bold ph-chat-circle-text text-sky-300 text-sm"></i>
+                        常用句 / 翻譯小紙條
+                    </h2>
+                    <p class="text-[11px] text-slate-400 mb-2">
+                        可以先把想跟店員、飯店人員說的內容打好，到現場只要給他們看就可以。
+                    </p>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-[12px]">
+                        <div>
+                            <label class="block text-[11px] text-slate-400 mb-1">中文原文</label>
+                            <textarea
+                                    v-model="translate.src"
+                                    rows="7"
+                                    class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-slate-100 focus:outline-none focus:border-sky-500"
+                                    placeholder="例如：可以幫我把這個甜點稍微加熱一下嗎？"></textarea>
+                        </div>
+                        <div>
+                            <label class="block text-[11px] text-slate-400 mb-1">翻譯結果（可自行修改）</label>
+                            <textarea
+                                    v-model="translate.dst"
+                                    rows="7"
+                                    class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-slate-100 focus:outline-none focus:border-emerald-500"
+                                    placeholder="在這裡填上翻譯好的內容"></textarea>
+                        </div>
+                    </div>
+                    <!-- <div class="mt-2 text-[11px] text-slate-500">
+                        ※ 目前翻譯欄是純手動貼上，你可以搭配 ChatGPT 或翻譯工具，把結果貼過來整理。
+                    </div> -->
+                </div>
+            </section>
         </main>
 
-        <!-- 底部固定導航列 -->
-        <nav class="absolute bottom-0 left-0 right-0 pb-3 px-4 z-30">
-            <div class="max-w-md mx-auto bg-slate-950/95 border border-slate-700 rounded-2xl shadow-[0_8px_30px_rgba(0,0,0,0.7)] px-2 py-1 flex justify-between">
+        <!-- Bottom Navigation -->
+        <nav class="bottom-nav border-t border-slate-800/80 px-4 py-2">
+            <div class="flex items-center justify-between text-[11px] text-slate-300">
                 <button
-                    @click="viewMode = 'plan'"
-                    class="flex-1 flex flex-col items-center py-1 rounded-xl mx-1 text-[11px]"
-                    :class="viewMode === 'plan' ? 'bg-slate-800 text-emerald-300' : 'text-slate-400 hover:text-slate-100'">
+                        @click="viewMode = 'plan'"
+                        class="flex flex-col items-center flex-1 py-1"
+                        :class="viewMode === 'plan' ? 'text-sky-300' : 'text-slate-400'">
                     <i class="ph-bold ph-calendar-check text-lg mb-0.5"></i>
                     行程
                 </button>
                 <button
-                    @click="viewMode = 'map'"
-                    class="flex-1 flex flex-col items-center py-1 rounded-xl mx-1 text-[11px]"
-                    :class="viewMode === 'map' ? 'bg-slate-800 text-emerald-300' : 'text-slate-400 hover:text-slate-100'">
-                    <i class="ph-bold ph-map-trifold text-lg mb-0.5"></i>
-                    地圖
-                </button>
-                <button
-                    @click="viewMode = 'money'"
-                    class="flex-1 flex flex-col items-center py-1 rounded-xl mx-1 text-[11px]"
-                    :class="viewMode === 'money' ? 'bg-slate-800 text-emerald-300' : 'text-slate-400 hover:text-slate-100'">
-                    <i class="ph-bold ph-currency-dollar text-lg mb-0.5"></i>
+                        @click="viewMode = 'money'"
+                        class="flex flex-col items-center flex-1 py-1"
+                        :class="viewMode === 'money' ? 'text-emerald-300' : 'text-slate-400'">
+                    <i class="ph-bold ph-wallet text-lg mb-0.5"></i>
                     分帳
                 </button>
                 <button
-                    @click="viewMode = 'checklist'"
-                    class="flex-1 flex flex-col items-center py-1 rounded-xl mx-1 text-[11px]"
-                    :class="viewMode === 'checklist' ? 'bg-slate-800 text-emerald-300' : 'text-slate-400 hover:text-slate-100'">
+                        @click="viewMode = 'checklist'"
+                        class="flex flex-col items-center flex-1 py-1"
+                        :class="viewMode === 'checklist' ? 'text-amber-300' : 'text-slate-400'">
                     <i class="ph-bold ph-check-square-offset text-lg mb-0.5"></i>
                     清單
                 </button>
                 <button
-                    @click="viewMode = 'translate'"
-                    class="flex-1 flex flex-col items-center py-1 rounded-xl mx-1 text-[11px]"
-                    :class="viewMode === 'translate' ? 'bg-slate-800 text-emerald-300' : 'text-slate-400 hover:text-slate-100'">
+                        @click="viewMode = 'translate'"
+                        class="flex flex-col items-center flex-1 py-1"
+                        :class="viewMode === 'translate' ? 'text-sky-300' : 'text-slate-400'">
                     <i class="ph-bold ph-translate text-lg mb-0.5"></i>
                     翻譯
                 </button>
             </div>
         </nav>
-        
-        <!-- 側邊欄 (旅程選單) -->
-        <transition name="slide">
-            <div v-if="showTripMenu" class="fixed inset-0 z-50 flex">
-                <div class="bg-slate-900 w-4/5 max-w-xs h-full shadow-2xl flex flex-col relative z-50 p-6 border-r border-slate-800">
-                    <div class="flex justify-between items-center mb-6">
-                        <h2 class="text-xl font-bold text-slate-50">我的旅程</h2>
-                        <button @click="showTripMenu = false" class="text-slate-400 hover:text-slate-100">
-                            <i class="ph-bold ph-x text-xl"></i>
-                        </button>
-                    </div>
-                    <button @click="createNewTrip" class="w-full py-3 mb-6 border-2 border-dashed border-teal-400 text-teal-200 rounded-xl font-bold hover:bg-slate-800 flex items-center justify-center gap-2">
-                        <i class="ph-bold ph-plus-circle"></i> 建立新旅程
-                    </button>
-                    <div class="flex-1 overflow-y-auto space-y-3 hide-scroll">
-                        <div
-                            v-for="trip in tripList"
-                            :key="trip.id" 
-                            @click="switchTrip(trip.id)"
-                            class="p-4 rounded-xl border transition cursor-pointer relative group"
-                            :class="currentTripId === trip.id ? 'bg-teal-900/70 border-teal-400 shadow-sm' : 'bg-slate-800 border-transparent hover:bg-slate-700'">
-                            <div class="font-bold text-slate-50">{{ trip.destination || '未命名行程' }}</div>
-                            <div class="text-xs text-slate-400 mt-1">{{ trip.startDate }} • {{ trip.daysCount }} 天</div>
-                            <button
-                                v-if="tripList.length > 1"
-                                @click.stop="deleteTrip(trip.id)"
-                                class="absolute right-3 top-3 text-slate-500 hover:text-red-400 p-1">
-                                <i class="ph-bold ph-trash"></i>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-                <div class="flex-1 bg-black/50 backdrop-blur-sm z-40" @click="showTripMenu = false"></div>
-            </div>
-        </transition>
 
-        <!-- 初始設定視窗 -->
-        <div v-if="showSetupModal" class="absolute inset-0 bg-slate-900/90 backdrop-blur-sm z-50 flex items-center justify-center p-6 animate-fade-in">
-            <div class="bg-slate-900 w-full max-w-sm rounded-3xl p-6 shadow-2xl relative border border-slate-700">
-                <div class="text-center mb-6">
-                    <div class="w-16 h-16 bg-teal-900 rounded-full flex items-center justify-center mx-auto mb-3">
-                        <i class="ph-duotone ph-airplane-tilt text-3xl text-teal-300"></i>
-                    </div>
-                    <h2 class="text-2xl font-bold text-slate-50">建立新旅程</h2>
-                    <p class="text-sm text-slate-400">簡單幾步，開始規劃您的冒險！</p>
+        <!-- Trip List Modal -->
+        <div
+                v-if="showTripList"
+                class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-40">
+            <div class="bg-slate-900 rounded-2xl border border-slate-700 w-full max-w-md p-4 shadow-2xl">
+                <div class="flex items-center justify-between mb-3">
+                    <h2 class="text-sm font-semibold text-slate-100 flex items-center gap-1.5">
+                        <i class="ph-bold ph-list text-sky-300"></i>
+                        我的旅程
+                    </h2>
+                    <button
+                            @click="showTripList = false"
+                            class="text-slate-400 hover:text-slate-200">
+                        <i class="ph-bold ph-x text-base"></i>
+                    </button>
                 </div>
-                <div class="space-y-4">
-                    <div>
-                        <label class="block text-xs font-bold text-slate-400 mb-1 ml-1">目的地 (英文/中文)</label>
-                        <div class="relative">
-                            <input v-model="setup.destination" @blur="detectRate" type="text" placeholder="例如: Tokyo, Osaka" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-slate-100 focus:ring-2 focus:ring-teal-500 font-bold">
-                            <button @click="detectRate" class="absolute right-3 top-3 text-teal-400 hover:text-teal-200">
-                                <i class="ph-bold ph-magnifying-glass"></i>
-                            </button>
-                        </div>
-                    </div>
-                    <div class="grid grid-cols-3 gap-3">
-                        <div class="col-span-2">
-                            <label class="block text-xs font-bold text-slate-400 mb-1 ml-1">開始日期</label>
-                            <input v-model="setup.startDate" type="date" class="h-12 w-full bg-slate-900 border border-slate-700 rounded-xl px-3 text-slate-100 focus:ring-2 focus:ring-teal-500 text-sm">
-                        </div>
+
+                <div class="space-y-1.5 max-h-64 overflow-y-auto scrollbar-thin text-[12px]">
+                    <div
+                            v-for="trip in tripList"
+                            :key="trip.id"
+                            class="flex items-center justify-between bg-slate-950/90 border border-slate-700 rounded-xl px-3 py-2 cursor-pointer hover:border-sky-500"
+                            @click="switchTrip(trip.id)">
                         <div>
-                            <label class="block text-xs font-bold text-slate-400 mb-1 ml-1">天數</label>
-                            <input v-model.number="setup.days" type="number" min="1" max="30" class="h-12 w-full bg-slate-900 border border-slate-700 rounded-xl px-3 text-slate-100 focus:ring-2 focus:ring-teal-500 text-center font-bold">
+                            <p class="font-semibold text-slate-100">{{ trip.name }}</p>
+                            <p class="text-[10px] text-slate-400">
+                                {{ trip.dateRange || '未設定日期' }}
+                            </p>
                         </div>
+                        <i v-if="trip.id === currentTripId" class="ph-bold ph-check-circle text-emerald-400 text-lg"></i>
                     </div>
-                    <div>
-                        <label class="block text-xs font-bold text-slate-400 mb-1 ml-1 flex justify-between">
-                            <span>匯率 ({{ setup.currency || '外幣' }}:台幣)</span>
-                            <span v-if="isRateLoading" class="text-teal-400 animate-pulse">抓取中...</span>
-                        </label>
-                        <input v-model.number="setup.rate" type="number" step="0.001" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-slate-100 focus:ring-2 focus:ring-teal-500 font-mono text-right">
-                    </div>
-                    <button @click="initTrip" class="w-full bg-teal-600 hover:bg-teal-500 text-white font-bold py-3.5 rounded-xl shadow-lg transform active:scale-95 transition flex items-center justify-center gap-2 mt-2">
-                        開始規劃 <i class="ph-bold ph-arrow-right"></i>
-                    </button>
-                    <button v-if="tripList.length>0" @click="showSetupModal = false" class="w-full text-slate-400 text-xs py-2 hover:text-slate-200">
-                        取消
-                    </button>
+                    <p v-if="!tripList.length" class="text-[11px] text-slate-500 py-4 text-center">
+                        目前只有這一個旅程，之後可以考慮做成多旅程版本（例如：東京 / 大阪 / 北海道）
+                    </p>
                 </div>
             </div>
         </div>
 
-    </div>
+        <!-- Setup Modal -->
+        <div
+                v-if="showSetup"
+                class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-40">
+            <div class="bg-slate-900 rounded-2xl border border-slate-700 w-full max-w-lg p-5 shadow-2xl max-h-[90vh] overflow-y-auto scrollbar-thin">
+                <div class="flex items-center justify-between mb-3">
+                    <h2 class="text-sm font-semibold text-slate-100 flex items-center gap-1.5">
+                        <i class="ph-bold ph-gear text-sky-300"></i>
+                        旅程設定
+                    </h2>
+                    <button
+                            @click="showSetup = false"
+                            class="text-slate-400 hover:text-slate-200">
+                        <i class="ph-bold ph-x text-base"></i>
+                    </button>
+                </div>
 
-    <script type="module">
-        import { createApp, ref, computed, watch, onMounted, nextTick, reactive } from 'https://unpkg.com/vue@3/dist/vue.esm-browser.js'
-        
-        const useFirebase = false; 
-        const firebaseConfig = { /* apiKey: "...", ... */ };
+                <div class="space-y-4 text-[13px]">
+                    <div>
+                        <label class="block text-xs text-slate-400 mb-1">旅程名稱 / 目的地</label>
+                        <input
+                                v-model="setup.destination"
+                                class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-slate-100 focus:outline-none focus:border-sky-500"
+                                placeholder="例如：東京五日自由行"
+                        />
+                    </div>
 
-        let appInstance, db;
-        let mapInstance = null;
-        let userMarker = null;
+                    <div>
+                        <label class="block text-xs text-slate-400 mb-1">國家 / 城市備註（選填）</label>
+                        <input
+                                v-model="setup.countryNote"
+                                class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-slate-100 focus:outline-none focus:border-sky-500"
+                                placeholder="例如：日本東京，主要活動在新宿 / 上野附近"
+                        />
+                    </div>
 
-        if (useFirebase) {
-            import("https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js").then(m => {
-                appInstance = m.initializeApp(firebaseConfig);
-                import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js").then(f => {
-                    db = f.getFirestore(appInstance);
-                });
-            });
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs text-slate-400 mb-1">出發日期</label>
+                            <input
+                                    type="date"
+                                    v-model="setup.startDate"
+                                    class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-slate-100 text-xs focus:outline-none focus:border-sky-500"
+                            />
+                        </div>
+                        <div>
+                            <label class="block text-xs text-slate-400 mb-1">天數</label>
+                            <input
+                                    type="number"
+                                    v-model.number="setup.days"
+                                    min="1"
+                                    max="30"
+                                    class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-slate-100 text-xs focus:outline-none focus:border-sky-500"
+                                    placeholder="例如：5"
+                            />
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs text-slate-400 mb-1">每日預算（新台幣）</label>
+                        <input
+                                type="number"
+                                v-model.number="setup.dailyBudget"
+                                class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-slate-100 text-xs focus:outline-none focus:border-emerald-500"
+                                placeholder="例如：3000"
+                        />
+                    </div>
+
+                    <div class="text-[11px] text-slate-500">
+                        設定完成後，行程頁面會依照天數產生 D1 / D2 / D3…，也會幫你計算距離出發還有幾天。
+                    </div>
+
+                    <div class="flex justify-end gap-2 pt-2">
+                        <button
+                                @click="showSetup = false"
+                                class="px-3 py-1.5 rounded-full border border-slate-600 text-slate-200 text-xs hover:bg-slate-800">
+                            取消
+                        </button>
+                        <button
+                                @click="applySetup"
+                                class="px-4 py-1.5 rounded-full bg-sky-500 text-slate-950 text-xs font-semibold hover:bg-sky-400">
+                            套用
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div> <!-- App Container end -->
+</div> <!-- #app end -->
+
+<script type="module">
+    const { createApp, ref, reactive, computed, onMounted, watch } = Vue;
+
+    const firebaseConfig = null;
+    const useFirebase = false;
+
+    let mapInstance = null;
+    let userMarker = null;
+
+        // 可選：填入自己的 Google Maps API Key，就會優先用 Distance Matrix API 算時間
+        // 若留空，會改用 OpenStreetMap + 直線距離粗估時間
+        const GOOGLE_MAPS_API_KEY = '';
+
+        // 簡單快取地點座標，避免重複呼叫 geocoding
+        const geocodeCache = {};
+
+        function toRad(deg) {
+            return deg * Math.PI / 180;
         }
 
-        createApp({
-            setup() {
-                const viewMode = ref('plan');
-                const currentDayIdx = ref(0);
-                const isOnline = ref(false);
-                const isFirebaseReady = ref(false);
-                let geoWatchId = null;
+        function haversineDistanceKm(a, b) {
+            const R = 6371; // 地球半徑 (km)
+            const dLat = toRad(b.lat - a.lat);
+            const dLon = toRad(b.lon - a.lon);
+            const lat1 = toRad(a.lat);
+            const lat2 = toRad(b.lat);
+            const h = Math.sin(dLat / 2) ** 2 +
+                      Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLon / 2) ** 2;
+            return 2 * R * Math.asin(Math.sqrt(h));
+        }
 
-                const showTripMenu = ref(false);
-                const tripList = ref([]);
-                const currentTripId = ref(null);
-                const showSetupModal = ref(false);
+        function estimateDurationMinutes(distanceKm, mode) {
+            // 簡單假設平均時速 (含等車 / 轉乘的 buffer)
+            let speedKmh = 4.5; // 走路
+            if (mode === 'taxi') speedKmh = 30;
+            else if (mode === 'bus') speedKmh = 20;
+            else if (mode === 'train') speedKmh = 45;
 
-                const days = ref([]);
-                const expenses = ref([]);
-                const participants = ref(['我', '旅伴A']);
-                const participantsStr = ref('我, 旅伴A');
-                const exchangeRate = ref(0.215);
-                const newExpense = ref({ item: '', amount: '', payer: '我' });
+            const hours = distanceKm / Math.max(speedKmh, 1);
+            let minutes = Math.round(hours * 60);
+            if (minutes < 3) minutes = 3; // 最少 3 分鐘
+            return minutes;
+        }
 
-                const convertAmount = ref(0);
+        function formatMinutesToText(minutes) {
+            if (!minutes || minutes <= 0) return '';
+            if (minutes < 60) return `約 ${minutes} 分鐘`;
+            const h = Math.floor(minutes / 60);
+            const m = minutes % 60;
+            if (m === 0) return `約 ${h} 小時`;
+            return `約 ${h} 小時 ${m} 分鐘`;
+        }
 
-                const isRateLoading = ref(false);
-                const isMapLoading = ref(false);
-                const userLocation = ref(null);
-                const weather = ref({ temp: null, icon: 'ph-sun', code: 0, location: '', daily: [] });
-                const setup = ref({
-                    destination: 'Tokyo',
-                    startDate: new Date().toISOString().split('T')[0],
-                    days: 5,
-                    rate: 0.215,
-                    currency: 'JPY',
-                    langCode: 'ja',
-                    langName: '日文'
-                });
+        async function geocodeNameToLatLng(name) {
+            if (!name) return null;
+            if (geocodeCache[name]) return geocodeCache[name];
+            try {
+                const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(name)}&limit=1`);
+                const data = await res.json();
+                if (data && data[0]) {
+                    const coord = { lat: parseFloat(data[0].lat), lon: parseFloat(data[0].lon) };
+                    geocodeCache[name] = coord;
+                    return coord;
+                }
+            } catch (e) {
+                console.error('Geocode 失敗', e);
+            }
+            return null;
+        }
 
-                const checklistSections = ref([
-                    {
-                        id: 'pre',
-                        title: '行前準備',
-                        icon: 'ph-clipboard-text',
-                        items: [
-                            { text: '確認護照有效期限', done: false },
-                            { text: '確認機票 / 飯店訂單', done: false },
-                            { text: '下載離線地圖 / 交通 App', done: false }
-                        ]
-                    },
-                    {
-                        id: 'pack',
-                        title: '行李清單',
-                        icon: 'ph-suitcase-rolling',
-                        items: [
-                            { text: '護照 / 身分證 / 駕照', done: false },
-                            { text: '錢包、信用卡、外幣', done: false },
-                            { text: '充電線、轉接頭、行動電源', done: false }
-                        ]
-                    },
-                    {
-                        id: 'other',
-                        title: '其他備忘',
-                        icon: 'ph-note-pencil',
-                        items: []
+        async function getGoogleTravelTimeText(origin, destination, mode) {
+            if (!GOOGLE_MAPS_API_KEY) return null;
+            const modeMap = {
+                walk: 'walking',
+                bus: 'transit',
+                train: 'transit',
+                taxi: 'driving'
+            };
+            const gmMode = modeMap[mode] || 'walking';
+            const url = `https://maps.googleapis.com/maps/api/distancematrix/json?units=metric&origins=${encodeURIComponent(origin)}&destinations=${encodeURIComponent(destination)}&mode=${gmMode}&language=zh-TW&key=${GOOGLE_MAPS_API_KEY}`;
+            try {
+                const res = await fetch(url);
+                const data = await res.json();
+                const element = data.rows?.[0]?.elements?.[0];
+                if (element && element.status === 'OK') {
+                    const minutes = Math.round(element.duration.value / 60);
+                    return formatMinutesToText(minutes);
+                }
+            } catch (e) {
+                console.error('Google Distance Matrix 失敗或被瀏覽器擋下 (CORS)', e);
+            }
+            return null;
+        }
+
+
+    if (useFirebase && firebaseConfig) {
+    }
+
+    const app = createApp({
+        setup() {
+            const viewMode = ref('plan');
+
+            const setup = reactive({
+                destination: '',
+                countryNote: '',
+                startDate: '',
+                days: 5,
+                dailyBudget: 3000
+            });
+
+            const days = ref([
+                { title: '第一天', date: '', shortDate: '', items: [] },
+                { title: '第二天', date: '', shortDate: '', items: [] },
+                { title: '第三天', date: '', shortDate: '', items: [] },
+                { title: '第四天', date: '', shortDate: '', items: [] },
+                { title: '第五天', date: '', shortDate: '', items: [] }
+            ]);
+            const currentDayIdx = ref(0);
+            const currentDay = computed(() => days.value[currentDayIdx.value] || { items: [] });
+
+            const expenses = ref([]);
+            const exchangeRate = reactive({
+                rate: 0,
+                currency: '',
+                note: ''
+            });
+
+            const participants = ref(['我', '旅伴A']);
+            const participantCount = ref(participants.value.length);
+            const participantsStr = ref('我, 旅伴A');
+            const newExpense = ref({
+                item: '',
+                amount: '',
+                payer: '我'
+            });
+
+            const checklist = reactive({
+                items: [
+                    { text: '護照 / 身分證', done: false },
+                    { text: '現金 / 信用卡 / 提款卡', done: false },
+                    { text: '手機、充電線、行動電源', done: false },
+                    { text: '轉接頭 / 轉接插座', done: false }
+                ],
+                todos: [
+                    { text: '確認護照有效期限', done: false },
+                    { text: '與家人報備行程與聯絡方式', done: false },
+                    { text: '下載或截圖行程、機票、飯店資訊', done: false }
+                ]
+            });
+
+            const translate = reactive({
+                src: '',
+                dst: ''
+            });
+
+            const weather = reactive({
+                loading: false,
+                error: '',
+                summary: '',
+                tempRange: ''
+            });
+
+            const tripList = ref([]);
+            const currentTripId = ref('trip_default');
+            const showTripList = ref(false);
+            const showSetup = ref(false);
+
+            const countryInfoMap = {
+                '東京': { rate: 0.23, currency: 'JPY', note: '1 日圓 ≈ 0.23 新台幣（請依實際匯率調整）' },
+                '日本': { rate: 0.23, currency: 'JPY', note: '1 日圓 ≈ 0.23 新台幣' },
+                '大阪': { rate: 0.23, currency: 'JPY', note: '1 日圓 ≈ 0.23 新台幣' },
+                '韓國': { rate: 0.024, currency: 'KRW', note: '1000 韓圓 ≈ 24 新台幣' },
+                '首爾': { rate: 0.024, currency: 'KRW', note: '1000 韓圓 ≈ 24 新台幣' },
+                '美國': { rate: 32, currency: 'USD', note: '1 美金 ≈ 32 新台幣' },
+                '紐約': { rate: 32, currency: 'USD', note: '1 美金 ≈ 32 新台幣' },
+                '歐洲': { rate: 35, currency: 'EUR', note: '1 歐元 ≈ 35 新台幣' },
+                '台灣': { rate: 1, currency: 'TWD', note: '已經是新台幣' }
+            };
+
+            const selectedCountryInfo = computed(() => {
+                if (!setup.destination) return null;
+                for (const key of Object.keys(countryInfoMap)) {
+                    if (setup.destination.includes(key) || (setup.countryNote && setup.countryNote.includes(key))) {
+                        return countryInfoMap[key];
                     }
-                ]);
+                }
+                return null;
+            });
 
-                const recommendationsMap = reactive({});
-                const isSearchingRecs = ref(false);
-                const searchTargetIndex = ref('');
-
-                const currentDay = computed(() => days.value[currentDayIdx.value] || {items:[], flight:null, date:'', title:''});
-                const totalExpense = computed(() => expenses.value.reduce((sum, item) => sum + (item.amount || 0), 0));
-
-                const paidByPerson = computed(() => {
-                    const map = {};
-                    participants.value.forEach(p => map[p] = 0);
-                    expenses.value.forEach(e => {
-                        if (map[e.payer] === undefined) map[e.payer] = 0;
-                        map[e.payer] += (e.amount || 0);
-                    });
-                    return map;
-                });
-
-                const settlementPlan = computed(() => {
-                    if (totalExpense.value === 0) return [];
-                    const average = totalExpense.value / participants.value.length;
-                    let balances = participants.value.map(p => ({
-                        name: p,
-                        val: (paidByPerson.value[p] || 0) - average
-                    }));
-                    let debtors = balances.filter(b => b.val < -1).sort((a, b) => a.val - b.val);
-                    let creditors = balances.filter(b => b.val > 1).sort((a, b) => b.val - a.val);
-                    const result = [];
-                    let i = 0; let j = 0;
-                    while (i < debtors.length && j < creditors.length) {
-                        let debtor = debtors[i];
-                        let creditor = creditors[j];
-                        let amount = Math.min(Math.abs(debtor.val), creditor.val);
-                        amount = Math.round(amount);
-                        if (amount > 0) result.push({ from: debtor.name, to: creditor.name, amount: amount });
-                        debtor.val += amount; creditor.val -= amount;
-                        if (Math.abs(debtor.val) < 1) i++;
-                        if (creditor.val < 1) j++;
-                    }
-                    return result;
-                });
-
-                const currencyLabel = computed(() => setup.value.currency || '外幣');
-                const currencySymbol = computed(() => {
-                    const map = { 'JPY': '¥', 'CNY': '¥', 'USD': '$', 'EUR': '€', 'KRW': '₩', 'GBP': '£', 'TWD': 'NT$', 'HKD': 'HK$', 'THB': '฿', 'VND': '₫' };
-                    return map[setup.value.currency] || '$';
-                });
-
-                const convertToTwd = computed(() => {
-                    const v = Number(convertAmount.value || 0);
-                    if (!v || !exchangeRate.value) return 0;
-                    return Math.round(v * exchangeRate.value);
-                });
-
-                const weatherDisplay = computed(() => {
-                    if (!currentDay.value || !currentDay.value.fullDate || weather.value.daily.length === 0) {
-                        return {
-                            temp: weather.value.temp !== null ? `${weather.value.temp}°` : '--',
-                            icon: weather.value.icon || 'ph-sun',
-                            label: `${setup.value.destination || '當地'} (目前)`,
-                            isForecast: false
-                        };
-                    }
-                    const targetDate = currentDay.value.fullDate;
-                    const idx = weather.value.daily.time.indexOf(targetDate);
-                    if (idx !== -1) {
-                        const max = Math.round(weather.value.daily.temperature_2m_max[idx]);
-                        const min = Math.round(weather.value.daily.temperature_2m_min[idx]);
-                        return {
-                            temp: `${min}° - ${max}°`,
-                            icon: getWeatherIcon(weather.value.daily.weathercode[idx]),
-                            label: `${setup.value.destination} (預報)`,
-                            isForecast: true
-                        };
-                    }
+            const applySetup = () => {
+                const daysCount = Math.max(1, Math.min(30, setup.days || 1));
+                const old = [...days.value];
+                days.value = Array.from({ length: daysCount }, (_, i) => {
+                    const oldDay = old[i] || { items: [] };
                     return {
-                        temp: weather.value.temp !== null ? `${weather.value.temp}°` : '--',
-                        icon: weather.value.icon || 'ph-sun',
-                        label: `${setup.value.destination} (目前)`,
-                        isForecast: false
+                        title: `第 ${i + 1} 天`,
+                        date: '',
+                        shortDate: '',
+                        items: oldDay.items || []
                     };
                 });
 
-                const daysToTrip = computed(() => {
-                    if (!setup.value.startDate) return null;
-                    const today = new Date();
-                    today.setHours(0,0,0,0);
-                    const start = new Date(setup.value.startDate);
-                    start.setHours(0,0,0,0);
-                    const diffMs = start - today;
-                    return Math.round(diffMs / (1000 * 60 * 60 * 24));
-                });
-
-                const tripDateRange = computed(() => {
-                    if (!setup.value.startDate || !setup.value.days) return '';
-                    const start = new Date(setup.value.startDate);
-                    const end = new Date(start);
-                    end.setDate(start.getDate() + (setup.value.days - 1));
-
-                    const fmt = (d) => {
-                        const m = d.getMonth() + 1;
-                        const day = d.getDate();
-                        return `${m}/${day}`;
-                    };
-                    return `${fmt(start)} - ${fmt(end)} • ${setup.value.days} 天`;
-                });
-
-                const checklistStats = computed(() => {
-                    let total = 0;
-                    let done = 0;
-                    checklistSections.value.forEach(sec => {
-                        sec.items.forEach(i => {
-                            if (!i.text) return;
-                            total++;
-                            if (i.done) done++;
-                        });
+                if (setup.startDate) {
+                    const base = new Date(setup.startDate);
+                    days.value.forEach((d, idx) => {
+                        const dt = new Date(base);
+                        dt.setDate(dt.getDate() + idx);
+                        d.date = dt.toISOString().slice(0, 10);
+                        d.shortDate = `${dt.getMonth() + 1}/${dt.getDate()}`;
                     });
-                    const percent = total ? Math.round(done / total * 100) : 0;
-                    return { total, done, percent };
+                }
+
+                const tripData = {
+                    setup: JSON.parse(JSON.stringify(setup)),
+                    days: JSON.parse(JSON.stringify(days.value)),
+                    expenses: JSON.parse(JSON.stringify(expenses.value)),
+                    participants: participantsStr.value
+                };
+                localStorage.setItem(currentTripId.value, JSON.stringify(tripData));
+                rebuildTripList();
+                showSetup.value = false;
+            };
+
+            const tripDateRange = computed(() => {
+                if (!setup.startDate || !setup.days) return '';
+                const start = new Date(setup.startDate);
+                const end = new Date(setup.startDate);
+                end.setDate(end.getDate() + setup.days - 1);
+                const fmt = (d) => `${d.getMonth() + 1}/${d.getDate()}`;
+                return `${fmt(start)} - ${fmt(end)} · 共 ${setup.days} 天`;
+            });
+
+            const daysToTrip = computed(() => {
+                if (!setup.startDate) return null;
+                const today = new Date();
+                const start = new Date(setup.startDate);
+                const diff = Math.ceil((start - today) / (1000 * 60 * 60 * 24));
+                if (diff < 0) return 0;
+                return diff;
+            });
+
+            const dailyBudgetDisplay = computed(() =>
+                setup.dailyBudget ? `${setup.dailyBudget.toLocaleString()} TWD` : '未設定'
+            );
+
+            const todaySpentDisplay = computed(() => {
+                if (!exchangeRate.rate || !exchangeRate.currency) return '尚未設定匯率';
+                const total = expenses.value.reduce((sum, e) => sum + Number(e.amount || 0), 0);
+                const twd = total * exchangeRate.rate;
+                return `${total.toFixed(0)} ${exchangeRate.currency} ≈ ${Math.round(twd).toLocaleString()} TWD`;
+            });
+
+            const addItem = () => currentDay.value.items.push({
+                    time: '',
+                    type: 'spot',
+                    activity: '',
+                    location: '',
+                    note: '',
+                    transportMode: 'walk',
+                    travelTimeText: ''
                 });
+            const removeItem = (idx) => currentDay.value.items.splice(idx, 1);
+            const clearDay = () => {
+                if (confirm('確定要清除這一天所有行程嗎？')) {
+                    currentDay.value.items = [];
+                }
+            };
+            const duplicateItem = (idx) => {
+                const item = currentDay.value.items[idx];
+                currentDay.value.items.splice(idx + 1, 0, JSON.parse(JSON.stringify(item)));
+            };
 
-                const generateId = () => 'trip_' + Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
-                const getWeatherIcon = (c) => {
-                    if (c === 0) return 'ph-sun';
-                    if (c < 4) return 'ph-cloud-sun';
-                    if (c < 50) return 'ph-cloud-fog';
-                    if (c < 70) return 'ph-cloud-rain';
-                    return 'ph-cloud';
-                };
-                const getTimePeriod = (t) => {
-                    if(!t) return '時間';
-                    const h = parseInt(t.split(':')[0]);
-                    return h<5?'凌晨':h<11?'上午':h<14?'中午':h<18?'下午':'晚上';
-                };
-                const toggleFlightCard = () => {
-                     if (currentDay.value.flight) {
-                        if(confirm('移除航班?')) currentDay.value.flight = null;
-                     } else {
-                        currentDay.value.flight = {
-                            type: 'arrival',
-                            startTime: '10:00',
-                            startAirport: 'TPE',
-                            number: 'FLIGHT',
-                            endTime: '14:00',
-                            endAirport: 'DEST',
-                            arrivalOffset: 0
-                        };
-                     }
-                };
-                const getDotColor = (t) => t==='food'
-                    ? 'bg-orange-400'
-                    : t==='shop'
-                        ? 'bg-pink-400'
-                        : t==='flight'
-                            ? 'bg-blue-500'
-                            : 'bg-teal-400';
+            const detectRate = () => {
+                const info = selectedCountryInfo.value;
+                if (!info) {
+                    alert('目前無法從目的地推測匯率，請手動輸入。');
+                    return;
+                }
+                exchangeRate.rate = info.rate;
+                exchangeRate.currency = info.currency;
+                exchangeRate.note = info.note;
+            };
 
-                const updateParticipants = () => {
+            const addExpense = () => {
+                if (!newExpense.value.item || !newExpense.value.amount || !newExpense.value.payer) {
+                    alert('請填寫完整的花費資訊');
+                    return;
+                }
+                expenses.value.push({
+                    item: newExpense.value.item,
+                    amount: Number(newExpense.value.amount),
+                    payer: newExpense.value.payer
+                });
+                newExpense.value.item = '';
+                newExpense.value.amount = '';
+            };
+            const removeExpense = (idx) => expenses.value.splice(idx, 1);
+
+            const totalAmount = computed(() =>
+                expenses.value.reduce((sum, e) => sum + Number(e.amount || 0), 0).toFixed(1)
+            );
+            const totalTwd = computed(() =>
+                (expenses.value.reduce((sum, e) => sum + Number(e.amount || 0), 0) * (exchangeRate.rate || 0)).toFixed(0)
+            );
+
+            const perPersonLocal = computed(() => {
+                if (!participants.value.length) return 0;
+                const total = expenses.value.reduce((sum, e) => sum + Number(e.amount || 0), 0);
+                return (total / participants.value.length).toFixed(1);
+            });
+            const perPersonTwd = computed(() => {
+                if (!participants.value.length) return 0;
+                const total = expenses.value.reduce((sum, e) => sum + Number(e.amount || 0), 0) * (exchangeRate.rate || 0);
+                return (total / participants.value.length).toFixed(0);
+            });
+
+            const paidByPerson = computed(() => {
+                const map = {};
+                participants.value.forEach(p => map[p] = 0);
+                expenses.value.forEach(e => {
+                    if (!map[e.payer]) map[e.payer] = 0;
+                    map[e.payer] += Number(e.amount || 0);
+                });
+                return map;
+            });
+
+            const balance = computed(() => {
+                const each = Number(perPersonLocal.value || 0);
+                const map = {};
+                Object.entries(paidByPerson.value).forEach(([p, amt]) => {
+                    map[p] = amt - each;
+                });
+                return map;
+            });
+
+            const updateParticipants = () => {
                     participants.value = participantsStr.value.split(',').map(s=>s.trim()).filter(s=>s);
+                    participantCount.value = participants.value.length || 0;
                     if (!participants.value.includes(newExpense.value.payer)) {
                         newExpense.value.payer = participants.value[0] || '我';
                     }
                 };
-                const updateDate = (e, day) => {
-                    const val = e.target.value;
-                    if(!val) return;
-                    day.fullDate = val;
-                    const d = new Date(val);
-                    if(isNaN(d.getTime())) return;
-                    const w = ['日','一','二','三','四','五','六'][d.getDay()];
-                    const mm = d.getMonth()+1; const dd = d.getDate();
-                    day.date = `${mm < 10 ? '0'+mm : mm}/${dd < 10 ? '0'+dd : dd} (${w})`;
-                    day.shortDate = `${mm}/${dd}`;
-                };
-
-                const addItem = () => currentDay.value.items.push({
-                time: '',
-                type: 'spot',
-                activity: '',
-                location: '',
-                note: '',
-                transport: '',
-                duration: ''
-                });
-
-
-                const removeItem = (idx) => currentDay.value.items.splice(idx, 1);
-                const addDay = () => {
-                    const idx = days.value.length + 1;
-                    days.value.push({ date: `Day ${idx}`, shortDate: `D${idx}`, title: '', items: [], flight: null });
-                };
-                const removeCurrentDay = () => {
-                    if(days.value.length>1 && confirm('刪除?')) {
-                        days.value.splice(currentDayIdx.value, 1);
-                        if (currentDayIdx.value >= days.value.length) currentDayIdx.value = days.value.length - 1;
+                const syncParticipantsStr = () => {
+                    participantsStr.value = participants.value.join(', ');
+                    if (!participants.value.includes(newExpense.value.payer)) {
+                        newExpense.value.payer = participants.value[0] || '我';
                     }
                 };
-                const getGoogleMapLink = (loc) => loc ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(loc)}` : '#';
-                const addExpense = () => {
-                    if (!newExpense.value.item || !newExpense.value.amount) return;
-                    expenses.value.unshift({...newExpense.value});
-                    newExpense.value.item='';
-                    newExpense.value.amount='';
-                };
-                const removeExpense = (idx) => expenses.value.splice(idx, 1);
-
-                const addChecklistItem = (sectionId) => {
-                    const sec = checklistSections.value.find(s => s.id === sectionId);
-                    if (!sec) return;
-                    sec.items.push({ text: '', done: false });
-                };
-                const removeChecklistItem = (sectionId, idx) => {
-                    const sec = checklistSections.value.find(s => s.id === sectionId);
-                    if (!sec) return;
-                    sec.items.splice(idx, 1);
-                };
-                const toggleChecklistItem = (sectionId, idx) => {
-                    const sec = checklistSections.value.find(s => s.id === sectionId);
-                    if (!sec) return;
-                    const item = sec.items[idx];
-                    if (!item) return;
-                    item.done = !item.done;
-                };
-
-                const searchNearby = async (item, idx) => {
-                    if (!item.location || item.type !== 'food') return;
-                    const key = `${currentDayIdx.value}-${idx}`;
-                    searchTargetIndex.value = key;
-                    isSearchingRecs.value = true;
-                    recommendationsMap[key] = [];
-                    try {
-                        const geoRes = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(item.location)}&limit=1`);
-                        const geoData = await geoRes.json();
-                        if (geoData && geoData.length > 0) {
-                            const query = `restaurant near ${item.location}`;
-                            const searchRes = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=4`);
-                            const searchData = await searchRes.json();
-                            recommendationsMap[key] = searchData.map(place => ({
-                                name: place.name || place.display_name.split(',')[0], 
-                                location: place.name || place.display_name.split(',')[0],
-                                note: '推薦地點'
-                            }));
-                            if (recommendationsMap[key].length === 0) {
-                                recommendationsMap[key] = [{
-                                    name: '找不到推薦，請嘗試更精確地點',
-                                    location: item.location,
-                                    note: ''
-                                }];
-                            }
+                const updateParticipantCount = () => {
+                    const target = Math.max(1, Number(participantCount.value) || 1);
+                    const current = participants.value.length;
+                    if (current < target) {
+                        for (let i = current; i < target; i++) {
+                            participants.value.push(`成員${i + 1}`);
                         }
-                    } catch (e) {
-                        console.error("推薦搜尋失敗", e);
-                    } finally {
-                        isSearchingRecs.value = false;
-                        searchTargetIndex.value = '';
+                    } else if (current > target) {
+                        participants.value.splice(target);
                     }
+                    syncParticipantsStr();
                 };
-                
-                const applyRecommendation = (item, rec) => {
+                const updateDate = (e, d) => {
+                d.date = e.target.value;
+                if (d.date) {
+                    const dt = new Date(d.date);
+                    d.shortDate = `${dt.getMonth() + 1}/${dt.getDate()}`;
+                } else {
+                    d.shortDate = '';
+                }
+            };
+
+            const rebuildTripList = () => {
+                const keys = Object.keys(localStorage).filter(k => k.startsWith('trip_'));
+                tripList.value = keys.map(k => {
+                    const obj = JSON.parse(localStorage.getItem(k) || '{}');
+                    return {
+                        id: k,
+                        name: obj.setup?.destination || '未命名旅程',
+                        dateRange: (obj.setup && obj.setup.startDate && obj.setup.days)
+                            ? (() => {
+                                const start = new Date(obj.setup.startDate);
+                                const end = new Date(obj.setup.startDate);
+                                end.setDate(end.getDate() + obj.setup.days - 1);
+                                const fmt = (d) => `${d.getMonth() + 1}/${d.getDate()}`;
+                                return `${fmt(start)} - ${fmt(end)} · 共 ${obj.setup.days} 天`;
+                            })()
+                            : ''
+                    };
+                });
+            };
+
+            const switchTrip = (id) => {
+                const str = localStorage.getItem(id);
+                if (!str) return;
+                try {
+                    const data = JSON.parse(str);
+                    if (data.setup) Object.assign(setup, data.setup);
+                    if (data.days && Array.isArray(data.days)) days.value = data.days;
+                    if (data.expenses && Array.isArray(data.expenses)) expenses.value = data.expenses;
+                    if (data.participants) {
+                        participantsStr.value = data.participants;
+                        updateParticipants();
+                    }
+                    currentTripId.value = id;
+                    showTripList.value = false;
+                } catch (e) {
+                    console.error(e);
+                }
+
+                const lDays = localStorage.getItem(`${id}_days`);
+                const lExp = localStorage.getItem(`${id}_expenses`);
+                const lUsers = localStorage.getItem(`${id}_users`);
+                if(lDays) {
+                        days.value = JSON.parse(lDays);
+                        // 兼容舊資料：補上交通相關欄位預設值
+                        days.value.forEach(d => {
+                            if (!d.items) d.items = [];
+                            d.items.forEach(it => {
+                                if (!it.transportMode) it.transportMode = 'walk';
+                                if (typeof it.travelTimeText === 'undefined') it.travelTimeText = '';
+                            });
+                        });
+                    }
+                    if(lExp) expenses.value = JSON.parse(lExp);
+                    if(lUsers) { participantsStr.value = lUsers; updateParticipants(); }
+
+                if (!setup.startDate) {
+                    days.value.forEach((d, i) => {
+                        d.shortDate = '';
+                    });
+                }
+            };
+
+            const fetchWeather = async () => {
+                weather.loading = true;
+                weather.error = '';
+                try {
+                    if (!setup.destination) {
+                        weather.summary = '尚未設定目的地';
+                        weather.tempRange = '';
+                        return;
+                    }
+                    weather.summary = '晴時多雲，適合散步行程（示意）';
+                    weather.tempRange = '約 10 – 18°C · 記得帶件外套';
+                } catch (e) {
+                    weather.error = '取得天氣資訊時發生問題';
+                } finally {
+                    weather.loading = false;
+                }
+            };
+
+            const recommendationsMap = reactive({});
+            const isSearchingRecs = ref(false);
+            const searchTargetIndex = ref(null);
+
+            const searchNearby = async (item, idx) => {
+                if (!item.location && !setup.destination) {
+                    alert('請先填寫地點或旅程目的地');
+                    return;
+                }
+                try {
+                    isSearchingRecs.value = true;
+                    searchTargetIndex.value = idx;
+                    const q = item.location || setup.destination;
+                    const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&limit=5`;
+                    const res = await fetch(url);
+                    const list = await res.json();
+                    recommendationsMap[idx] = list.map(p => ({
+                        place_id: p.place_id,
+                        name: p.display_name.split(',')[0],
+                        vicinity: p.display_name,
+                        rating: (Math.random() * 2 + 3).toFixed(1)
+                    }));
+                } catch (e) {
+                    console.error(e);
+                    alert('取得附近地點時發生錯誤，可以稍後再試或手動查詢。');
+                } finally {
+                    isSearchingRecs.value = false;
+                    searchTargetIndex.value = null;
+                }
+            };
+
+            const applyRecommendation = (item, rec) => {
                     item.activity = rec.name;
                     item.location = rec.name;
                 };
+                const estimateTravelTime = async (index) => {
+                    const items = currentDay.value.items || [];
+                    if (index <= 0 || index >= items.length) {
+                        return;
+                    }
+                    const prev = items[index - 1];
+                    const curr = items[index];
+                    if (!prev.location || !curr.location) {
+                        alert('請先在「上一個」以及「這一個」行程都填寫地點。');
+                        return;
+                    }
+                    if (!curr.transportMode) {
+                        curr.transportMode = 'walk';
+                    }
 
-                const countryInfoMap = {
-                    'jp': {c:'JPY',l:'ja',n:'日文'},
-                    'kr': {c:'KRW',l:'ko',n:'韓文'},
-                    'us': {c:'USD',l:'en',n:'英文'},
-                    'cn': {c:'CNY',l:'zh-CN',n:'簡中'},
-                    'th': {c:'THB',l:'th',n:'泰文'},
-                    'tw': {c:'TWD',l:'zh-TW',n:'中文'}
-                };
-
-                const detectRate = async () => {
-                    if(!setup.value.destination) return;
-                    isRateLoading.value = true;
+                    // 先嘗試使用 Google Distance Matrix API（需要在上方填入 GOOGLE_MAPS_API_KEY）
+                    let textResult = null;
                     try {
-                        const geoRes = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(setup.value.destination)}&limit=1&addressdetails=1`);
-                        const geoData = await geoRes.json();
-                        if(geoData?.[0]?.address?.country_code) {
-                            const info = countryInfoMap[geoData[0].address.country_code.toLowerCase()] || {c:'USD',l:'en',n:'英文'};
-                            setup.value.currency = info.c;
-                            setup.value.langCode = info.l;
-                            setup.value.langName = info.n;
-                            if(info.c === 'TWD') {
-                                setup.value.rate = 1;
-                            } else {
-                                const rRes = await fetch(`https://api.exchangerate-api.com/v4/latest/${info.c}`);
-                                const rData = await rRes.json();
-                                if(rData?.rates?.TWD) setup.value.rate = rData.rates.TWD;
-                            }
-                            exchangeRate.value = setup.value.rate;
-                        }
-                    } catch(e) {
+                        textResult = await getGoogleTravelTimeText(prev.location, curr.location, curr.transportMode);
+                    } catch (e) {
                         console.error(e);
-                    } finally {
-                        isRateLoading.value = false;
                     }
+
+                    // 若未成功，改用 OpenStreetMap 的座標 + 直線距離粗估
+                    if (!textResult) {
+                        const origin = await geocodeNameToLatLng(prev.location);
+                        const dest = await geocodeNameToLatLng(curr.location);
+                        if (origin && dest) {
+                            const distKm = haversineDistanceKm(origin, dest);
+                            const minutes = estimateDurationMinutes(distKm, curr.transportMode);
+                            textResult = `${formatMinutesToText(minutes)}（直線距離約 ${distKm.toFixed(1)} 公里）`;
+                        } else {
+                            textResult = '無法估算，請在 Google Maps 再確認。';
+                        }
+                    }
+
+                    curr.travelTimeText = textResult;
                 };
 
-                const fetchWeather = async (locName) => {
+            const loadTripFromStorage = () => {
+                const str = localStorage.getItem(currentTripId.value);
+                if (str) {
                     try {
-                        weather.value.location = locName;
-                        const geoRes = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(locName)}&limit=1`);
-                        const geoData = await geoRes.json();
-                        if(geoData?.[0]) {
-                            const {lat, lon} = geoData[0];
-                            const wRes = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true&daily=temperature_2m_max,temperature_2m_min,weathercode&timezone=auto&forecast_days=16`);
-                            const wData = await wRes.json();
-                            weather.value.temp = Math.round(wData.current_weather.temperature);
-                            weather.value.icon = getWeatherIcon(wData.current_weather.weathercode);
-                            if(wData.daily) weather.value.daily = wData.daily;
+                        const data = JSON.parse(str);
+                        if (data.setup) Object.assign(setup, data.setup);
+                        if (data.days) days.value = data.days;
+                        if (data.expenses) expenses.value = data.expenses;
+                        if (data.participants) {
+                            participantsStr.value = data.participants;
+                            updateParticipants();
                         }
-                    } catch(e) {
+                    } catch (e) {
                         console.error(e);
-                        weather.value.temp = '--';
                     }
-                };
+                } else {
+                    localStorage.setItem(currentTripId.value, JSON.stringify({
+                        setup,
+                        days: days.value,
+                        expenses: [],
+                        participants: participantsStr.value
+                    }));
+                }
 
-                const loadTripList = () => {
-                    const list = localStorage.getItem('travel_app_index');
-                    tripList.value = list ? JSON.parse(list) : [];
-                };
-                const saveTripList = () => {
-                    localStorage.setItem('travel_app_index', JSON.stringify(tripList.value));
-                };
-                const createNewTrip = () => {
-                    setup.value = {
-                        destination: '',
-                        startDate: new Date().toISOString().split('T')[0],
-                        days: 5,
-                        rate: 0.215,
-                        currency: 'JPY',
-                        langCode: 'ja',
-                        langName: '日文'
-                    };
-                    showSetupModal.value = true;
-                    showTripMenu.value = false;
-                };
-                const initTrip = () => {
-                    if(!setup.value.destination) { alert('請輸入目的地'); return; }
-                    const newId = generateId();
-                    const newTripMeta = {
-                        id: newId,
-                        destination: setup.value.destination,
-                        startDate: setup.value.startDate,
-                        daysCount: setup.value.days
-                    };
-                    
-                    const newDays = [];
-                    const start = new Date(setup.value.startDate);
-                    const dNames = ['日','一','二','三','四','五','六'];
-                    for(let i=0; i<setup.value.days; i++) {
-                        const curr = new Date(start);
-                        curr.setDate(start.getDate()+i);
-                        const mm = curr.getMonth()+1; const dd = curr.getDate();
-                        const yyyy = curr.getFullYear();
-                        const fullDate = `${yyyy}-${mm < 10 ? '0'+mm : mm}-${dd < 10 ? '0'+dd : dd}`;
-                        newDays.push({
-                            date: `${mm < 10 ? '0'+mm : mm}/${dd < 10 ? '0'+dd : dd} (${dNames[curr.getDay()]})`,
-                            shortDate: `${mm}/${dd}`,
-                            fullDate: fullDate,
-                            title: i===0?'抵達 & 探索':'行程規劃',
-                            items: [],
-                            flight: null
-                        });
-                    }
+                const lDays = localStorage.getItem(`${currentTripId.value}_days`);
+                const lExp = localStorage.getItem(`${currentTripId.value}_expenses`);
+                const lUsers = localStorage.getItem(`${currentTripId.value}_users`);
+                if (lDays) days.value = JSON.parse(lDays);
+                if (lExp) expenses.value = JSON.parse(lExp);
+                if (lUsers) { participantsStr.value = lUsers; updateParticipants(); }
 
-                    localStorage.setItem(`${newId}_days`, JSON.stringify(newDays));
-                    localStorage.setItem(`${newId}_exp`, '[]');
-                    localStorage.setItem(`${newId}_users`, '我, 旅伴A');
-                    localStorage.setItem(`${newId}_rate`, setup.value.rate.toString());
-                    localStorage.setItem(`${newId}_config`, JSON.stringify(setup.value));
-
-                    tripList.value.unshift(newTripMeta);
-                    saveTripList();
-                    
-                    switchTrip(newId);
-                    showSetupModal.value = false;
-                };
-                const deleteTrip = (id) => {
-                    if(!confirm('確定刪除此行程？無法復原。')) return;
-                    tripList.value = tripList.value.filter(t => t.id !== id);
-                    saveTripList();
-                    localStorage.removeItem(`${id}_days`);
-                    localStorage.removeItem(`${id}_exp`);
-                    localStorage.removeItem(`${id}_users`);
-                    localStorage.removeItem(`${id}_rate`);
-                    localStorage.removeItem(`${id}_config`);
-                    if(currentTripId.value === id) {
-                        if(tripList.value.length > 0) switchTrip(tripList.value[0].id);
-                        else { days.value=[]; currentTripId.value=null; showSetupModal.value=true; }
-                    }
-                };
-                const switchTrip = (id) => {
-                    currentTripId.value = id;
-                    showTripMenu.value = false;
-                    const lDays = localStorage.getItem(`${id}_days`);
-                    const lExp = localStorage.getItem(`${id}_exp`);
-                    const lUsers = localStorage.getItem(`${id}_users`);
-                    const lRate = localStorage.getItem(`${id}_rate`);
-                    const lConf = localStorage.getItem(`${id}_config`);
-
-                    if(lDays) days.value = JSON.parse(lDays);
-                    if(lExp) expenses.value = JSON.parse(lExp);
-                    if(lUsers) { participantsStr.value = lUsers; updateParticipants(); }
-                    if(lRate) exchangeRate.value = parseFloat(lRate);
-                    if(lConf) {
-                        const conf = JSON.parse(lConf);
-                        setup.value = conf;
-                        exchangeRate.value = conf.rate || exchangeRate.value;
-                        fetchWeather(conf.destination);
-                    }
-                };
-
-                onMounted(() => {
-                    loadTripList();
-                    if (tripList.value.length > 0) {
-                        switchTrip(tripList.value[0].id);
-                    } else {
-                        showSetupModal.value = true;
-                    }
-                    
-                    watch([days, expenses, exchangeRate, participantsStr], () => {
-                        if (!currentTripId.value) return;
-                        localStorage.setItem(`${currentTripId.value}_days`, JSON.stringify(days.value));
-                        localStorage.setItem(`${currentTripId.value}_exp`, JSON.stringify(expenses.value));
-                        localStorage.setItem(`${currentTripId.value}_rate`, exchangeRate.value.toString());
-                        localStorage.setItem(`${currentTripId.value}_users`, participantsStr.value);
-                    }, { deep: true });
-                });
-
-                const initMap = async () => { 
-                    isMapLoading.value = true;
-                    await nextTick();
-                    if (!document.getElementById('map')) return;
-                    if (mapInstance) { mapInstance.remove(); mapInstance = null; }
-                    mapInstance = L.map('map').setView([35.6895, 139.6917], 13);
-                    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                        attribution: '© OpenStreetMap'
-                    }).addTo(mapInstance);
-
-                    if ("geolocation" in navigator) {
-                        if (geoWatchId !== null) navigator.geolocation.clearWatch(geoWatchId);
-                        geoWatchId = navigator.geolocation.watchPosition(pos => {
-                            userLocation.value = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-                            const icon = L.divIcon({
-                                className: 'custom-div-icon',
-                                html: "<div class='gps-pulse'></div>",
-                                iconSize: [14, 14]
-                            });
-                            if (userMarker) userMarker.setLatLng([pos.coords.latitude, pos.coords.longitude]);
-                            else userMarker = L.marker([pos.coords.latitude, pos.coords.longitude], { icon: icon }).addTo(mapInstance);
-                        }, err => {
-                            console.warn(err);
-                        }, { enableHighAccuracy: true });
-                    }
-
-                    const locs = currentDay.value.items.filter(i => i.location);
-                    const bounds = L.latLngBounds();
-                    for (const item of locs) {
-                        try {
-                            await new Promise(r => setTimeout(r, 400));
-                            const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(item.location)}`);
-                            const d = await res.json();
-                            if (d && d.length > 0) {
-                                const lat = parseFloat(d[0].lat);
-                                const lon = parseFloat(d[0].lon);
-                                L.marker([lat, lon]).addTo(mapInstance).bindPopup(`<b>${item.activity || ''}</b><br>${item.location}`);
-                                bounds.extend([lat, lon]);
-                            }
-                        } catch (e) {
-                            console.error(e);
+                if (setup.startDate) {
+                    const base = new Date(setup.startDate);
+                    days.value.forEach((d, idx) => {
+                        if (!d.date) {
+                            const dt = new Date(base);
+                            dt.setDate(dt.getDate() + idx);
+                            d.date = dt.toISOString().slice(0, 10);
+                            d.shortDate = `${dt.getMonth() + 1}/${dt.getDate()}`;
                         }
-                    }
-                    isMapLoading.value = false; 
-                    if(locs.length > 0) mapInstance.fitBounds(bounds, { padding: [50, 50] });
-                };
+                    });
+                }
+            };
 
-                const centerOnUser = () => {
-                    if(userLocation.value && mapInstance) {
-                        mapInstance.flyTo([userLocation.value.lat, userLocation.value.lng], 15);
-                    }
-                };
+            const rebuildLocalStructure = () => {
+                const stored = localStorage.getItem(currentTripId.value);
+                if (!stored) return;
+                try {
+                    const data = JSON.parse(stored);
+                    localStorage.setItem(`${currentTripId.value}_days`, JSON.stringify(data.days || []));
+                    localStorage.setItem(`${currentTripId.value}_expenses`, JSON.stringify(data.expenses || []));
+                    localStorage.setItem(`${currentTripId.value}_users`, data.participants || '');
+                } catch (e) {
+                    console.error(e);
+                }
+            };
 
-                watch(viewMode, (v) => { if(v === 'map') initMap(); });
-                watch(currentDayIdx, () => { if(viewMode.value === 'map') initMap(); });
+            onMounted(() => {
+                rebuildTripList();
+                loadTripFromStorage();
+                rebuildLocalStructure();
 
-                return {
+                watch([days, expenses, exchangeRate, participantsStr], () => {
+                    localStorage.setItem(`${currentTripId.value}_days`, JSON.stringify(days.value));
+                    localStorage.setItem(`${currentTripId.value}_expenses`, JSON.stringify(expenses.value));
+                    localStorage.setItem(`${currentTripId.value}_users`, participantsStr.value);
+                }, { deep: true });
+
+                fetchWeather();
+            });
+
+            return {
                     viewMode, currentDayIdx, days, currentDay,
-                    participants, participantsStr, updateParticipants,
-                    getGoogleMapLink, addItem, removeItem, removeCurrentDay, addDay,
-                    expenses, newExpense, totalExpense, addExpense, removeExpense,
-                    paidByPerson, settlementPlan, exchangeRate,
-                    isOnline, getTimePeriod, weather,
-                    isMapLoading, userLocation, initMap, centerOnUser,
-                    updateDate, showSetupModal, setup, initTrip, weatherDisplay, detectRate, isRateLoading,
-                    currencyLabel, currencySymbol, toggleFlightCard, getDotColor,
-                    showTripMenu, tripList, createNewTrip, switchTrip, deleteTrip, currentTripId,
-                    searchNearby, recommendationsMap, isSearchingRecs, applyRecommendation, searchTargetIndex,
-                    convertAmount, convertToTwd,
-                    daysToTrip, tripDateRange,
-                    checklistSections, checklistStats,
-                    addChecklistItem, removeChecklistItem, toggleChecklistItem
+                    participants, participantsStr, participantCount, updateParticipants, syncParticipantsStr, updateParticipantCount,
+                    setup, applySetup, tripDateRange, daysToTrip,
+                    addItem, removeItem, clearDay, duplicateItem,
+                    expenses, exchangeRate, newExpense,
+                    detectRate, addExpense, removeExpense,
+                    totalAmount, totalTwd, perPersonLocal, perPersonTwd,
+                    paidByPerson, balance,
+                    checklist, translate,
+                    dailyBudgetDisplay, todaySpentDisplay,
+                    weather, fetchWeather,
+                    tripList, currentTripId, showTripList, switchTrip, rebuildTripList,
+                    showSetup,
+                    updateDate,
+                    searchNearby, recommendationsMap, isSearchingRecs, applyRecommendation, estimateTravelTime, searchTargetIndex,
+                    loadTripFromStorage
                 };
-            }
-        }).mount('#app')
-    </script>
+        }
+    });
+
+    app.mount('#app');
+</script>
 </body>
 </html>
