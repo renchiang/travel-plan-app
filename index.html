@@ -1036,8 +1036,8 @@
         </transition>
     </div>
 
-    <script type="module">
-        import { createApp, ref, computed, watch, onMounted, nextTick, reactive } from 'https://unpkg.com/vue@3/dist/vue.esm-browser.js'
+    <script>
+        const { createApp, ref, computed, watch, onMounted, nextTick, reactive } = Vue;
         
         const useFirebase = false; 
         const firebaseConfig = { /* apiKey: "...", ... */ };
