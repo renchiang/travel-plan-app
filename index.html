@@ -631,82 +631,114 @@
                         }
                     }
                 };
+
+                // ========= Leaflet 地圖核心：完整版 initMap =========
                 const initMap = async () => { 
                     isMapLoading.value = true;
                     await nextTick();
-                    if (!document.getElementById('map')) return;
-                    if (mapInstance) { mapInstance.remove(); mapInstance = null; }
+
+                    const mapEl = document.getElementById('map');
+                    if (!mapEl) {
+                        isMapLoading.value = false;
+                        return;
+                    }
+
+                    // 清掉舊地圖
+                    if (mapInstance) { 
+                        mapInstance.remove(); 
+                        mapInstance = null; 
+                    }
+
+                    // 建立新地圖 + 底圖
                     mapInstance = L.map('map').setView([35.6895, 139.6917], 13);
                     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                         maxZoom: 19,
                         attribution: '&copy; OpenStreetMap contributors'
                     }).addTo(mapInstance);
 
-                    if (currentDay.value) {
-                        currentDay.value.items
-                            .filter(i => i.location)
-                            .forEach(item => {
-                                const query = encodeURIComponent(item.location);
-                                fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${query}&limit=1`)
-                                    .then(r => r.json())
-                                    .then(data => {
-                                        if (data?.[0]) {
-                                            const { lat, lon } = data[0];
-                                            L.marker([lat, lon]).addTo(mapInstance).bindPopup(
-                                                `<b>${item.activity || ''}</b><br>${item.location || ''}`
-                                            );
-                                        }
-                                    })
-                                    .catch(console.error);
+                    // 啟動 GPS 追蹤使用者位置（藍色小點）
+                    if ("geolocation" in navigator) {
+                        if (geoWatchId !== null) {
+                            navigator.geolocation.clearWatch(geoWatchId);
+                        }
+
+                        geoWatchId = navigator.geolocation.watchPosition(pos => {
+                            userLocation.value = { 
+                                lat: pos.coords.latitude, 
+                                lng: pos.coords.longitude 
+                            };
+
+                            const icon = L.divIcon({
+                                className: 'custom-div-icon',
+                                html: "<div class='gps-pulse'></div>",
+                                iconSize: [14, 14]
                             });
+
+                            if (userMarker) {
+                                userMarker.setLatLng([pos.coords.latitude, pos.coords.longitude]);
+                            } else {
+                                userMarker = L.marker(
+                                    [pos.coords.latitude, pos.coords.longitude], 
+                                    { icon }
+                                ).addTo(mapInstance);
+                            }
+                        }, err => {
+                            console.warn('geo error', err);
+                        }, { enableHighAccuracy: true });
                     }
+
+                    // 當天行程有填 location 的項目 → 轉 marker
+                    const locs = (currentDay.value?.items || []).filter(i => i.location);
+                    const bounds = L.latLngBounds();
+
+                    for (const item of locs) {
+                        try {
+                            // 避免打太快被 Nominatim 限速
+                            await new Promise(r => setTimeout(r, 500));
+
+                            const res = await fetch(
+                                `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(item.location)}&limit=1`
+                            );
+                            const d = await res.json();
+
+                            if (d && d.length > 0) {
+                                const lat = parseFloat(d[0].lat);
+                                const lon = parseFloat(d[0].lon);
+
+                                L.marker([lat, lon])
+                                    .addTo(mapInstance)
+                                    .bindPopup(`<b>${item.activity || ''}</b><br>${item.location || ''}`);
+
+                                bounds.extend([lat, lon]);
+                            }
+                        } catch (e) {
+                            console.error('geocode error', e);
+                        }
+                    }
+
                     isMapLoading.value = false;
+
+                    if (locs.length > 0) {
+                        mapInstance.fitBounds(bounds, { padding: [50, 50] });
+                    }
                 };
 
-                const centerOnUser = () => {
-                    if (!navigator.geolocation) {
-                        alert('瀏覽器不支援定位');
-                        return;
+                // 定位按鈕：把鏡頭移動到目前 userLocation
+                const centerOnUser = () => { 
+                    if (userLocation.value && mapInstance) {
+                        mapInstance.flyTo(
+                            [userLocation.value.lat, userLocation.value.lng], 
+                            15
+                        ); 
+                    } else {
+                        alert('尚未取得定位或地圖尚未載入');
                     }
-                    navigator.geolocation.getCurrentPosition(
-                        (pos) => {
-                            const { latitude, longitude } = pos.coords;
-                            userLocation.value = { lat: latitude, lon: longitude };
-                            if (mapInstance) {
-                                mapInstance.setView([latitude, longitude], 15);
-                                if (!userMarker) {
-                                    userMarker = L.marker([latitude, longitude], {
-                                        title: '你現在的位置',
-                                    }).addTo(mapInstance);
-                                } else {
-                                    userMarker.setLatLng([latitude, longitude]);
-                                }
-                            }
-                        },
-                        (err) => {
-                            console.error(err);
-                            alert('無法取得定位');
-                        }
-                    );
                 };
 
                 onMounted(() => {
                     isOnline.value = navigator.onLine;
                     window.addEventListener('online', () => (isOnline.value = true));
                     window.addEventListener('offline', () => (isOnline.value = false));
-                    if (navigator.geolocation) {
-                        geoWatchId = navigator.geolocation.watchPosition(
-                            (pos) => {
-                                userLocation.value = {
-                                    lat: pos.coords.latitude,
-                                    lon: pos.coords.longitude,
-                                };
-                            },
-                            (err) => {
-                                console.warn('geo error', err);
-                            }
-                        );
-                    }
 
                     const storedTrips = localStorage.getItem('travel_app_index');
                     if (storedTrips) {
@@ -727,7 +759,15 @@
                     }, { deep: true });
                 });
 
-                watch(viewMode, (v) => { if(v === 'map') initMap(); });
+                // 切換到底圖模式時 → 初始化地圖
+                watch(viewMode, (v) => { 
+                    if(v === 'map') initMap(); 
+                });
+
+                // 在地圖模式下切換 D1/D2... → 重新初始化當天的 marker
+                watch(currentDayIdx, () => { 
+                    if (viewMode.value === 'map') initMap(); 
+                });
 
                 const searchNearby = async (item, idx) => {
                     if (!item.location || item.type !== 'food') return;
@@ -877,6 +917,27 @@
         .fade-enter-from,
         .fade-leave-to {
             opacity: 0;
+        }
+
+        /* 使用者 GPS 小圓點動畫（Leaflet divIcon 用） */
+        .custom-div-icon .gps-pulse {
+            width: 14px;
+            height: 14px;
+            border-radius: 9999px;
+            background: #38bdf8;
+            box-shadow: 0 0 0 4px rgba(56, 189, 248, 0.4);
+            animation: gps-pulse 1.5s infinite;
+        }
+
+        @keyframes gps-pulse {
+            0% {
+                transform: scale(1);
+                opacity: 1;
+            }
+            100% {
+                transform: scale(1.8);
+                opacity: 0;
+            }
         }
     </style>
 </head>
@@ -1309,7 +1370,7 @@
             <!-- 編輯行程 Modal -->
             <transition name="fade">
                 <div
-                    v-if="viewMode === 'plan' && editModalVisible"
+                    v-if="viewMode === 'plan' && editModalVisible'
                     class="fixed inset-0 z-40 flex items-center justify-center bg-slate-950/80 px-4"
                 >
                     <div class="w-full max-w-sm bg-slate-900 rounded-3xl border border-slate-700 shadow-xl p-5">
