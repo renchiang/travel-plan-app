@@ -1,0 +1,675 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>我的旅遊計畫 | Travel Plan</title>
+
+  <!-- Vue 3 -->
+  <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+  <!-- Tailwind CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Phosphor Icons -->
+  <script src="https://unpkg.com/@phosphor-icons/web"></script>
+  <!-- Google Font -->
+  <link
+    rel="stylesheet"
+    href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&display=swap"
+  />
+
+  <style>
+    body {
+      font-family: 'Noto Sans TC', system-ui, -apple-system, BlinkMacSystemFont,
+        'Segoe UI', sans-serif;
+      background: radial-gradient(circle at top, #0f172a 0, #020617 55%, #000 100%);
+    }
+    .hide-scroll::-webkit-scrollbar {
+      display: none;
+    }
+    .hide-scroll {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+    .fade-enter-active,
+    .fade-leave-active {
+      transition: opacity 0.2s ease;
+    }
+    .fade-enter-from,
+    .fade-leave-to {
+      opacity: 0;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex items-center justify-center py-6 px-3">
+  <div
+    id="app"
+    class="w-full max-w-sm bg-slate-900/90 border border-slate-800 rounded-3xl shadow-2xl overflow-hidden"
+  >
+    <!-- Header：目的地 + 共用按鈕 -->
+    <div class="relative px-4 pt-4 pb-3 border-b border-slate-800 bg-gradient-to-b from-slate-900 to-slate-950">
+      <!-- 共用按鈕 -->
+      <button
+        @click="showShareModal = true"
+        class="absolute right-4 top-4 text-slate-300 hover:text-white transition"
+      >
+        <i class="ph-bold ph-users-three text-2xl"></i>
+      </button>
+
+      <div class="overflow-hidden text-center pr-10">
+        <div class="flex items-center justify-center gap-1">
+          <i class="ph-fill ph-map-pin text-rose-400 text-lg"></i>
+          <h1 class="text-xl font-bold tracking-wide truncate">
+            {{ tripTitle || '旅遊行程' }}
+          </h1>
+        </div>
+        <p class="text-xs text-slate-400 mt-1 truncate">
+          {{ dateRange || '點右上角可分享給朋友一起編輯' }}
+        </p>
+      </div>
+    </div>
+
+    <!-- 行程內容 -->
+    <div class="px-4 py-3 space-y-3">
+      <!-- 行程標題列：Day 切換 + 新增行程 -->
+      <div class="flex items-center justify-between gap-2">
+        <div class="flex items-center gap-1 overflow-x-auto hide-scroll">
+          <button
+            v-for="(day, dIdx) in days"
+            :key="day.id"
+            @click="currentDayIndex = dIdx"
+            class="px-2.5 py-1.5 rounded-full text-xs border text-slate-200 whitespace-nowrap"
+            :class="currentDayIndex === dIdx ? 'bg-teal-500 text-slate-900 border-teal-500' : 'bg-slate-900 border-slate-600'"
+          >
+            第 {{ dIdx + 1 }} 天
+          </button>
+          <button
+            @click="addDay"
+            class="flex items-center justify-center w-7 h-7 text-slate-300 border border-dashed border-slate-500 rounded-full text-lg shrink-0 hover:bg-slate-800"
+          >
+            +
+          </button>
+        </div>
+
+        <button
+          @click="addItem"
+          class="flex items-center gap-1 text-xs px-2 py-1 rounded-full bg-slate-800 text-slate-100 border border-slate-600 hover:bg-slate-700"
+        >
+          <i class="ph-bold ph-plus text-xs"></i>
+          行程
+        </button>
+      </div>
+
+      <!-- 行程 Timeline：只顯示時間 + 地點名稱，整卡可拖拉排序 -->
+      <div class="relative pl-4 border-l border-slate-700 space-y-3">
+        <div
+          v-for="(item, idx) in currentDay.items"
+          :key="item.id"
+          class="relative group"
+          draggable="true"
+          @dragstart="onDragStart(idx)"
+          @dragover.prevent
+          @drop="onDrop(idx)"
+        >
+          <!-- 串線上的圓點 -->
+          <div
+            class="absolute -left-[21px] top-1/2 -translate-y-1/2 w-3 h-3 rounded-full border-2 border-slate-900 shadow-sm bg-rose-500"
+          ></div>
+
+          <!-- 行程卡片 -->
+          <div
+            class="bg-slate-800/90 hover:bg-slate-800 rounded-2xl shadow-sm border border-slate-700 hover:shadow-lg transition flex items-center gap-3 px-3 py-2 cursor-pointer"
+            @click="openEditModal(idx)"
+          >
+            <!-- 左：時間 -->
+            <div class="flex flex-col items-center justify-center w-[3.5rem]">
+              <div class="text-[10px] text-slate-400 mb-0.5">
+                {{ getTimePeriod(item.time) }}
+              </div>
+              <div class="text-lg font-mono font-semibold text-slate-50">
+                {{ item.time || '--:--' }}
+              </div>
+            </div>
+
+            <!-- 中：地點名稱 -->
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center gap-2">
+                <div
+                  class="w-6 h-6 rounded-full bg-rose-500 text-[11px] text-white flex items-center justify-center font-bold shrink-0"
+                >
+                  {{ idx + 1 }}
+                </div>
+                <div class="font-semibold text-sm text-slate-50 truncate">
+                  {{ item.location || '點一下編輯地點名稱' }}
+                </div>
+              </div>
+
+              <p v-if="item.note" class="text-[11px] text-slate-400 mt-0.5 line-clamp-1">
+                ✏️ {{ item.note }}
+              </p>
+            </div>
+
+            <!-- 右：操作 icon（不阻擋拖拉／點擊） -->
+            <div class="flex flex-col items-end gap-1 text-slate-400 text-[11px]">
+              <span class="px-1.5 py-0.5 rounded-full bg-slate-900 border border-slate-600">
+                停留 {{ formatStay(item.stayMinutes) }}
+              </span>
+              <div class="flex gap-1">
+                <button
+                  class="p-1 rounded-full hover:bg-slate-700"
+                  @click.stop="openNoteModal(idx)"
+                  title="景點筆記"
+                >
+                  <i class="ph-bold ph-note-pencil text-xs"></i>
+                </button>
+                <button
+                  class="p-1 rounded-full hover:bg-slate-700"
+                  @click.stop="removeItem(idx)"
+                  title="刪除"
+                >
+                  <i class="ph-bold ph-trash text-xs text-rose-400"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 沒有行程時提示 -->
+        <div
+          v-if="currentDay.items.length === 0"
+          class="text-center text-xs text-slate-400 pt-4 pb-2"
+        >
+          還沒有行程，點右上角「＋ 行程」新增一筆吧！
+        </div>
+      </div>
+    </div>
+
+    <!-- 編輯行程 Modal -->
+    <transition name="fade">
+      <div
+        v-if="editModalVisible"
+        class="fixed inset-0 z-40 flex items-center justify-center bg-slate-950/80 px-4"
+      >
+        <div class="w-full max-w-sm bg-slate-900 rounded-3xl border border-slate-700 shadow-xl p-5">
+          <div class="flex items-center justify-between mb-3">
+            <h2 class="text-lg font-bold text-slate-50 flex items-center gap-1">
+              <i class="ph-bold ph-map-pin text-rose-400"></i>
+              編輯行程
+            </h2>
+            <button
+              class="text-slate-400 hover:text-slate-100"
+              @click="closeEditModal"
+            >
+              <i class="ph-bold ph-x text-lg"></i>
+            </button>
+          </div>
+
+          <div class="space-y-3 text-xs">
+            <!-- 地點名稱 -->
+            <div>
+              <label class="block mb-1 text-slate-300">地點名稱</label>
+              <input
+                v-model="editForm.location"
+                type="text"
+                class="w-full rounded-xl bg-slate-800 border border-slate-600 px-3 py-2 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-teal-500/70"
+                placeholder="例如：松島海上纜車 松島Sky Park"
+              />
+            </div>
+
+            <!-- 抵達時間 -->
+            <div>
+              <label class="block mb-1 text-slate-300">抵達時間</label>
+              <div class="flex items-center gap-2">
+                <input
+                  v-model="editForm.time"
+                  type="time"
+                  class="flex-1 rounded-xl bg-slate-800 border border-slate-600 px-3 py-2 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-teal-500/70"
+                />
+                <span class="text-[11px] text-slate-400">
+                  （系統規劃／手動皆可）
+                </span>
+              </div>
+            </div>
+
+            <!-- 停留時間 -->
+            <div>
+              <label class="block mb-1 text-slate-300">停留時間</label>
+              <div class="flex items-center gap-2">
+                <select
+                  v-model.number="editForm.stayHours"
+                  class="flex-1 rounded-xl bg-slate-800 border border-slate-600 px-2 py-2 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-teal-500/70"
+                >
+                  <option :value="h" v-for="h in [0,1,2,3,4,5]"> {{ h }} 小時</option>
+                </select>
+                <select
+                  v-model.number="editForm.stayMinutes"
+                  class="flex-1 rounded-xl bg-slate-800 border border-slate-600 px-2 py-2 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-teal-500/70"
+                >
+                  <option :value="m" v-for="m in [0,15,30,45]"> {{ m }} 分鐘</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- 預估離開時間（根據抵達＋停留） -->
+            <div class="border-t border-slate-700 pt-3 mt-2">
+              <div class="flex items-center justify-between text-xs text-slate-300">
+                <span>預估離開時間</span>
+                <span class="font-mono text-teal-300">
+                  {{ estimatedLeaveTime || '--:--' }}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div class="flex justify-end gap-2 mt-4">
+            <button
+              class="px-4 py-2 rounded-xl text-xs font-bold border border-slate-600 text-slate-200 hover:bg-slate-800"
+              @click="closeEditModal"
+            >
+              取消
+            </button>
+            <button
+              class="px-4 py-2 rounded-xl text-xs font-bold bg-teal-500 text-slate-900 hover:bg-teal-400"
+              @click="saveEditModal"
+            >
+              儲存
+            </button>
+          </div>
+        </div>
+      </div>
+    </transition>
+
+    <!-- 景點筆記 Modal -->
+    <transition name="fade">
+      <div
+        v-if="noteModalVisible"
+        class="fixed inset-0 z-40 flex items-center justify-center bg-slate-950/80 px-4"
+      >
+        <div class="w-full max-w-sm bg-slate-900 rounded-3xl border border-slate-700 shadow-xl p-5">
+          <div class="flex items-center justify-between mb-3">
+            <h2 class="text-lg font-bold text-slate-50">景點筆記</h2>
+            <button
+              class="text-slate-400 hover:text-slate-100"
+              @click="closeNoteModal"
+            >
+              <i class="ph-bold ph-x text-lg"></i>
+            </button>
+          </div>
+
+          <textarea
+            v-model="noteText"
+            rows="6"
+            class="w-full rounded-2xl bg-slate-800 border border-slate-600 px-3 py-2 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-teal-500/70"
+            placeholder="可以記一些心得、交通提醒、拍照角度…"
+          ></textarea>
+
+          <div class="flex justify-end gap-2 mt-4">
+            <button
+              class="px-4 py-2 rounded-xl text-xs font-bold border border-slate-600 text-slate-200 hover:bg-slate-800"
+              @click="closeNoteModal"
+            >
+              取消
+            </button>
+            <button
+              class="px-4 py-2 rounded-xl text-xs font-bold bg-teal-500 text-slate-900 hover:bg-teal-400"
+              @click="saveNoteModal"
+            >
+              儲存
+            </button>
+          </div>
+        </div>
+      </div>
+    </transition>
+
+    <!-- 共用行程 Modal：匯出 / 匯入 JSON -->
+    <transition name="fade">
+      <div
+        v-if="showShareModal"
+        class="fixed inset-0 z-40 flex items-center justify-center bg-slate-950/80 px-4"
+      >
+        <div class="w-full max-w-sm bg-slate-900 rounded-3xl border border-slate-700 shadow-xl p-5">
+          <div class="flex items-center justify-between mb-3">
+            <h2 class="text-lg font-bold text-slate-50 flex items-center gap-2">
+              <i class="ph-bold ph-users-three text-teal-300"></i>
+              與他人共用行程
+            </h2>
+            <button
+              class="text-slate-400 hover:text-slate-100"
+              @click="showShareModal = false"
+            >
+              <i class="ph-bold ph-x text-lg"></i>
+            </button>
+          </div>
+
+          <div class="space-y-4 text-xs text-slate-200">
+            <!-- 匯出 -->
+            <div>
+              <p class="mb-1 text-slate-400">
+                1. 把下面這段文字複製，貼給朋友（LINE / Messenger 都可以）。
+              </p>
+              <textarea
+                readonly
+                class="w-full h-24 rounded-2xl bg-slate-800 border border-slate-700 px-3 py-2 font-mono text-[11px] text-emerald-300 break-all"
+              >{{ exportText }}</textarea>
+              <button
+                class="mt-2 w-full px-3 py-1.5 rounded-xl bg-slate-800 text-xs font-bold text-slate-100 border border-slate-600 hover:bg-slate-700"
+                @click="copyExportText"
+              >
+                複製分享文字
+              </button>
+            </div>
+
+            <!-- 匯入 -->
+            <div class="border-t border-slate-700 pt-3">
+              <p class="mb-1 text-slate-400">
+                2. 收到朋友的分享內容時，貼到下面，按「匯入行程」即可。
+              </p>
+              <textarea
+                v-model="importText"
+                class="w-full h-24 rounded-2xl bg-slate-800 border border-slate-700 px-3 py-2 font-mono text-[11px] text-slate-100"
+                placeholder="把朋友傳的 JSON 貼在這裡"
+              ></textarea>
+              <button
+                class="mt-2 w-full px-3 py-1.5 rounded-xl bg-teal-500 text-xs font-bold text-slate-900 hover:bg-teal-400"
+                @click="importFromText"
+              >
+                匯入行程
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </transition>
+  </div>
+
+  <script>
+    const { createApp, ref, computed, watch } = Vue;
+
+    function createDay(id, items = []) {
+      return {
+        id,
+        items
+      };
+    }
+
+    function createItem(id, time = '', location = '') {
+      return {
+        id,
+        time,
+        location,
+        stayMinutes: 0,
+        note: ''
+      };
+    }
+
+    createApp({
+      setup() {
+        const tripTitle = ref('釜山 松島 一日遊');
+        const dateRange = ref('2025/01/01 (三)');
+
+        // 初始 Day & 行程（照你的截圖內容）
+        const days = ref([
+          createDay(1, [
+            createItem(
+              1,
+              '11:39',
+              '松島灣總車站 송도 베이 스테이션 (해상케이블카)'
+            ),
+            createItem(2, '12:09', '松島海上纜車 松島Sky Park')
+          ])
+        ]);
+
+        const currentDayIndex = ref(0);
+        const currentDay = computed(() => days.value[currentDayIndex.value]);
+
+        // 拖拉排序
+        const draggingIndex = ref(null);
+        const onDragStart = (idx) => {
+          draggingIndex.value = idx;
+        };
+        const onDrop = (idx) => {
+          if (draggingIndex.value === null || draggingIndex.value === idx) return;
+          const list = currentDay.value.items;
+          const moved = list.splice(draggingIndex.value, 1)[0];
+          list.splice(idx, 0, moved);
+          draggingIndex.value = null;
+          saveToStorage();
+        };
+
+        // 新增 / 刪除 Day & 行程
+        const addDay = () => {
+          const newId = days.value.length + 1;
+          days.value.push(createDay(newId, []));
+          currentDayIndex.value = days.value.length - 1;
+          saveToStorage();
+        };
+
+        const addItem = () => {
+          const list = currentDay.value.items;
+          const newId =
+            list.length === 0 ? 1 : Math.max(...list.map((i) => i.id)) + 1;
+          list.push(createItem(newId));
+          saveToStorage();
+        };
+
+        const removeItem = (idx) => {
+          if (!confirm('要刪除這個行程嗎？')) return;
+          currentDay.value.items.splice(idx, 1);
+          saveToStorage();
+        };
+
+        // 編輯行程 Modal
+        const editModalVisible = ref(false);
+        const editIndex = ref(null);
+        const editForm = ref({
+          time: '',
+          location: '',
+          stayHours: 0,
+          stayMinutes: 0
+        });
+
+        const openEditModal = (idx) => {
+          const it = currentDay.value.items[idx];
+          editIndex.value = idx;
+          editForm.value = {
+            time: it.time || '',
+            location: it.location || '',
+            stayHours: Math.floor((it.stayMinutes || 0) / 60),
+            stayMinutes: (it.stayMinutes || 0) % 60
+          };
+          editModalVisible.value = true;
+        };
+
+        const closeEditModal = () => {
+          editModalVisible.value = false;
+        };
+
+        const estimatedLeaveTime = computed(() => {
+          const t = editForm.value.time;
+          if (!t) return '';
+          const [h, m] = t.split(':').map((x) => parseInt(x || '0', 10));
+          const addMinutes =
+            (editForm.value.stayHours || 0) * 60 +
+            (editForm.value.stayMinutes || 0);
+          let total = h * 60 + m + addMinutes;
+          total = ((total % (24 * 60)) + 24 * 60) % (24 * 60); // 保證在 0~1439
+          const hh = String(Math.floor(total / 60)).padStart(2, '0');
+          const mm = String(total % 60).padStart(2, '0');
+          return `${hh}:${mm}`;
+        });
+
+        const saveEditModal = () => {
+          const idx = editIndex.value;
+          if (idx == null) return;
+          const it = currentDay.value.items[idx];
+          it.time = editForm.value.time;
+          it.location = editForm.value.location;
+          it.stayMinutes =
+            (editForm.value.stayHours || 0) * 60 +
+            (editForm.value.stayMinutes || 0);
+          editModalVisible.value = false;
+          saveToStorage();
+        };
+
+        // 景點筆記 Modal
+        const noteModalVisible = ref(false);
+        const noteIndex = ref(null);
+        const noteText = ref('');
+
+        const openNoteModal = (idx) => {
+          const it = currentDay.value.items[idx];
+          noteIndex.value = idx;
+          noteText.value = it.note || '';
+          noteModalVisible.value = true;
+        };
+
+        const closeNoteModal = () => {
+          noteModalVisible.value = false;
+        };
+
+        const saveNoteModal = () => {
+          const idx = noteIndex.value;
+          if (idx == null) return;
+          currentDay.value.items[idx].note = noteText.value;
+          noteModalVisible.value = false;
+          saveToStorage();
+        };
+
+        // 共用：匯出 / 匯入
+        const showShareModal = ref(false);
+        const importText = ref('');
+
+        const exportText = computed(() =>
+          JSON.stringify(
+            {
+              title: tripTitle.value,
+              dateRange: dateRange.value,
+              days: days.value
+            },
+            null,
+            2
+          )
+        );
+
+        const copyExportText = async () => {
+          try {
+            await navigator.clipboard.writeText(exportText.value);
+            alert('已複製，可以貼給朋友囉！');
+          } catch (e) {
+            alert('瀏覽器不支援自動複製，請手動選取文字複製。');
+          }
+        };
+
+        const importFromText = () => {
+          if (!importText.value.trim()) {
+            alert('請先貼上分享內容。');
+            return;
+          }
+          try {
+            const obj = JSON.parse(importText.value);
+            if (!obj || !Array.isArray(obj.days)) {
+              throw new Error('格式錯誤');
+            }
+            tripTitle.value = obj.title || tripTitle.value;
+            dateRange.value = obj.dateRange || dateRange.value;
+            days.value = obj.days;
+            currentDayIndex.value = 0;
+            importText.value = '';
+            alert('匯入成功，可以一起編輯了！');
+            saveToStorage();
+          } catch (e) {
+            alert('匯入失敗：格式不是預期的 JSON。');
+          }
+        };
+
+        // 工具：時間區段
+        const getTimePeriod = (time) => {
+          if (!time) return '';
+          const h = parseInt(time.split(':')[0] || '0', 10);
+          if (h < 6) return '凌晨';
+          if (h < 12) return '上午';
+          if (h < 18) return '下午';
+          return '晚上';
+        };
+
+        // 停留時間顯示
+        const formatStay = (mins) => {
+          mins = mins || 0;
+          const h = Math.floor(mins / 60);
+          const m = mins % 60;
+          if (h === 0 && m === 0) return '0 分鐘';
+          if (h === 0) return `${m} 分鐘`;
+          if (m === 0) return `${h} 小時`;
+          return `${h} 小時 ${m} 分`;
+        };
+
+        // LocalStorage 儲存 / 載入
+        const STORAGE_KEY = 'travel_plan_simple_v1';
+
+        const saveToStorage = () => {
+          const payload = {
+            tripTitle: tripTitle.value,
+            dateRange: dateRange.value,
+            days: days.value
+          };
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+        };
+
+        const loadFromStorage = () => {
+          try {
+            const raw = localStorage.getItem(STORAGE_KEY);
+            if (!raw) return;
+            const obj = JSON.parse(raw);
+            if (obj.tripTitle) tripTitle.value = obj.tripTitle;
+            if (obj.dateRange) dateRange.value = obj.dateRange;
+            if (Array.isArray(obj.days) && obj.days.length > 0) {
+              days.value = obj.days;
+            }
+          } catch (e) {
+            console.warn('Load storage failed', e);
+          }
+        };
+
+        loadFromStorage();
+
+        // 任何變更自動保存
+        watch(
+          () => ({ days: days.value }),
+          () => saveToStorage(),
+          { deep: true }
+        );
+
+        return {
+          tripTitle,
+          dateRange,
+          days,
+          currentDayIndex,
+          currentDay,
+          addDay,
+          addItem,
+          removeItem,
+          onDragStart,
+          onDrop,
+          editModalVisible,
+          editForm,
+          openEditModal,
+          closeEditModal,
+          saveEditModal,
+          estimatedLeaveTime,
+          noteModalVisible,
+          noteText,
+          openNoteModal,
+          closeNoteModal,
+          saveNoteModal,
+          showShareModal,
+          exportText,
+          importText,
+          copyExportText,
+          importFromText,
+          getTimePeriod,
+          formatStay
+        };
+      }
+    }).mount('#app');
+  </script>
+</body>
+</html>
