@@ -76,55 +76,53 @@
     input,
     textarea,
     select {
-    max-width: 100%;
-    box-sizing: border-box;
+      max-width: 100%;
+      box-sizing: border-box;
     }
 
     /* 去掉 Safari 預設樣式，避免 time/date 看起來怪、超出邊框 */
     input[type="date"],
     input[type="time"],
     input[type="number"] {
-    -webkit-appearance: none;
-    appearance: none;
+      -webkit-appearance: none;
+      appearance: none;
     }
 
     /* 防止 iPhone 輸入時畫面自動放大：小螢幕時，表單字體一律 >= 16px */
     @media (max-width: 640px) {
-        input,
-        textarea,
-        select {
-            font-size: 16px !important;
-        }
+      input,
+      textarea,
+      select {
+        font-size: 16px !important;
+      }
 
-        /* 基本字體稍微放大一點，整體比較好讀 */
-        body {
-            font-size: 15px !important;
-        }
+      /* 基本字體稍微放大一點，整體比較好讀 */
+      body {
+        font-size: 15px !important;
+      }
 
-        /* 把 Tailwind 的字級在手機上整體放大一階 */
-        .text-xs {
-            font-size: 0.9rem !important;      /* 約 14.4px */
-        }
+      /* 把 Tailwind 的字級在手機上整體放大一階 */
+      .text-xs {
+        font-size: 0.9rem !important;      /* 約 14.4px */
+      }
 
-        .text-sm {
-            font-size: 1rem !important;        /* 約 16px */
-        }
+      .text-sm {
+        font-size: 1rem !important;        /* 約 16px */
+      }
 
-        .text-base {
-            font-size: 1.05rem !important;     /* 約 16.8px */
-        }
+      .text-base {
+        font-size: 1.05rem !important;     /* 約 16.8px */
+      }
 
-        /* 你常用的超小字：text-[10px] / text-[11px] 通通拉上來 */
-        .text-\[10px\] {
-            font-size: 0.85rem !important;     /* 約 13.6px */
-        }
+      /* 你常用的超小字：text-[10px] / text-[11px] 通通拉上來 */
+      .text-\[10px\] {
+        font-size: 0.85rem !important;     /* 約 13.6px */
+      }
 
-        .text-\[11px\] {
-            font-size: 0.9rem !important;      /* 約 14.4px */
-        }
+      .text-\[11px\] {
+        font-size: 0.9rem !important;      /* 約 14.4px */
+      }
     }
-
-
   </style>
 </head>
 <body class="bg-slate-50 text-slate-900">
@@ -132,58 +130,69 @@
 
     <!-- Header -->
     <header class="px-4 pt-4 pb-2 bg-gradient-to-b from-white via-slate-50 to-slate-50 border-b border-slate-200 shadow-sm">
-    <div class="flex items-center justify-between mb-3">
+      <div class="flex items-center justify-between mb-3">
         <!-- 左邊：三條線 + 目前旅程標題 -->
         <div class="flex items-center gap-3">
-        <!-- 三條線按鈕：打開旅程列表 -->
-        <button
+          <!-- 三條線按鈕：打開旅程列表 -->
+          <button
             @click="showTripMenu = true"
             class="inline-flex items-center justify-center w-9 h-9 rounded-2xl border border-teal-400/60 bg-teal-500/10 text-teal-200 hover:bg-teal-500/20"
-        >
+          >
             <i class="ph-bold ph-list text-xl"></i>
-        </button>
+          </button>
 
-        <div>
+          <div>
             <div class="flex items-center gap-2">
-            <!-- 用 currentTitle 顯示：旅程名稱 > 目的地 > 預設文字 -->
-            <h1 class="text-2xl font-extrabold tracking-tight leading-tight">
+              <!-- 用 currentTitle 顯示：旅程名稱 > 目的地 > 預設文字 -->
+              <h1 class="text-2xl font-extrabold tracking-tight leading-tight">
                 {{ currentTitle }}
-            </h1>
+              </h1>
+
+              <!-- 天氣搬到這裡：行程名稱後面的小徽章 -->
+              <div
+                v-if="weather.temp !== null"
+                class="flex items-center gap-1 rounded-full bg-sky-50 border border-sky-200 px-2 py-0.5 text-[11px] text-slate-600"
+              >
+                <span class="text-base">{{ weather.icon }}</span>
+                <span class="font-semibold">{{ weather.temp }}°C</span>
+                <span
+                  v-if="weather.location"
+                  class="text-[10px] text-slate-500"
+                >
+                  {{ weather.location }}
+                </span>
+              </div>
             </div>
 
-            <!-- <p class="text-xs text-slate-400 mt-0.5">
-            點擊下方日期切換行程
-            </p> -->
             <p v-if="tripDateRange" class="text-[11px] text-teal-300 mt-0.5">
-            {{ tripDateRange }}
+              {{ tripDateRange }}
             </p>
-        </div>
+          </div>
         </div>
 
         <!-- 右邊：連線狀態 + 分享 -->
         <div class="flex flex-col items-end gap-1">
-        <span
+          <span
             class="inline-flex items-center gap-1 text-[10px]"
             :class="isOnline ? 'text-emerald-300' : 'text-amber-300'"
-        >
+          >
             <span
-            class="w-1.5 h-1.5 rounded-full"
-            :class="isOnline ? 'bg-emerald-400' : 'bg-amber-400'"
+              class="w-1.5 h-1.5 rounded-full"
+              :class="isOnline ? 'bg-emerald-400' : 'bg-amber-400'"
             ></span>
             {{ isOnline ? '已連線' : '離線模式' }}
-        </span>
+          </span>
 
-        <button
+          <button
             @click="openShareModal"
             class="flex items-center gap-1 px-2 py-1 rounded-full bg-emerald-100 hover:bg-emerald-200 border border-emerald-300 text-[11px] text-emerald-800 mt-1"
-        >
+          >
             <i class="ph-bold ph-share-network text-xs"></i>
             分享行程
-        </button>
+          </button>
         </div>
-    </div>
+      </div>
 
-      <!-- Share Modal -->
       <!-- Trip Drawer：點左上三條線打開 -->
       <transition name="fade">
         <div
@@ -261,12 +270,24 @@
                       <span v-else>未設定日期</span>
                     </p>
                   </div>
-                  <button
-                    @click.stop="deleteTrip(trip.id)"
-                    class="text-slate-500 hover:text-rose-400"
-                  >
-                    <i class="ph-bold ph-trash text-sm"></i>
-                  </button>
+
+                  <!-- 右邊：編輯 + 刪除 -->
+                  <div class="flex items-center gap-1">
+                    <button
+                      @click.stop="editTrip(trip.id)"
+                      class="text-slate-500 hover:text-teal-500"
+                      title="編輯旅程"
+                    >
+                      <i class="ph-bold ph-note-pencil text-xs"></i>
+                    </button>
+                    <button
+                      @click.stop="deleteTrip(trip.id)"
+                      class="text-slate-500 hover:text-rose-400"
+                      title="刪除旅程"
+                    >
+                      <i class="ph-bold ph-trash text-sm"></i>
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -283,20 +304,20 @@
       <!-- Day tabs -->
       <div class="mt-3 flex items-center gap-1 overflow-x-auto hide-scroll pb-1">
         <button
-        v-for="(d, idx) in days"
-        :key="idx"
-        @click="currentDayIdx = idx"
-        class="px-2 py-1 rounded-xl border text-[11px] flex flex-col items-start min-w-[64px]"
-        :class="currentDayIdx === idx
-            ? 'border-teal-400/70 bg-teal-100 text-slate-900'
-            : 'border-slate-300 bg-white text-slate-600 hover:bg-slate-100'"
+          v-for="(d, idx) in days"
+          :key="idx"
+          @click="currentDayIdx = idx"
+          class="px-2 py-1 rounded-xl border text-[11px] flex flex-col items-start min-w-[64px]"
+          :class="currentDayIdx === idx
+              ? 'border-teal-400/70 bg-teal-100 text-slate-900'
+              : 'border-slate-300 bg-white text-slate-600 hover:bg-slate-100'"
         >
-        <span class="font-bold text-2xl tracking-tight text-slate-900">
+          <span class="font-bold text-2xl tracking-tight text-slate-900">
             D{{ idx + 1 }}
-        </span>
-        <span class="text-[10px] text-slate-600">
+          </span>
+          <span class="text-[10px] text-slate-600">
             {{ d.shortDate || d.date || `第 ${idx+1} 天` }}
-        </span>
+          </span>
         </button>
         <button
           @click="addDay"
@@ -313,45 +334,6 @@
       <!-- 行程表 (Plan View) -->
       <transition name="fade" mode="out-in">
         <div v-if="viewMode === 'plan'" :key="currentDayIdx" class="p-4 space-y-6">
-          <!-- 今日摘要 + 天氣 -->
-          <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 flex justify-between items-start">
-            <div class="flex-1 relative pt-0.5">
-              <!-- 隱形日期選擇器 -->
-              <input type="date" :value="currentDay.date?.length === 10 ? currentDay.date : ''" @change="updateDate"
-                class="absolute top-0 left-0 w-40 h-8 opacity-0 z-20 cursor-pointer">
-              <!-- 日期顯示 -->
-                <input
-                v-model="currentDay.date"
-                class="text-lg font-bold text-slate-900 bg-transparent border-none p-0 focus:ring-0 w-full relative z-10 pointer-events-none"
-                placeholder="Day 1 (點擊設定)">
-                <input
-                v-model="currentDay.title"
-                class="text-sm text-slate-700 bg-transparent border-b border-dotted border-slate-300 focus:border-teal-400 focus:outline-none w-full mt-1"
-                placeholder="幫這一天取個標題吧，例如：上野 & 阿美橫町">
-            </div>
-            <div class="flex flex-col items-end gap-1">
-              <div class="flex items-center gap-2 text-xs text-slate-200">
-                <span class="inline-flex items-center justify-center w-7 h-7 rounded-full bg-slate-900 text-lg">
-                  {{ weather.icon }}
-                </span>
-                <div class="flex flex-col items-end">
-                  <span class="font-bold text-sm" v-if="weather.temp !== null">
-                    {{ weather.temp }}°C
-                  </span>
-                  <span class="text-[10px] text-slate-400">
-                    {{ weather.location || '尚未設定城市' }}
-                  </span>
-                </div>
-              </div>
-              <button
-                @click="handleWeatherUpdate"
-                class="mt-1 px-2 py-1 text-[10px] rounded-full border border-slate-600 text-slate-300 hover:border-teal-400 hover:text-teal-200 flex items-center gap-1"
-              >
-                <i class="ph-bold ph-cloud-sun text-xs"></i>
-                更新天氣
-              </button>
-            </div>
-          </div>
 
           <!-- 天氣預報 -->
           <div v-if="weatherDisplay" class="bg-white rounded-2xl p-3 border border-slate-200">
@@ -377,7 +359,7 @@
                   {{ getWeatherIcon(d.code) }}
                 </span>
                 <span class="text-[10px] text-slate-700">
-                {{ Math.round(d.tmin) }}° - {{ Math.round(d.tmax) }}°
+                  {{ Math.round(d.tmin) }}° - {{ Math.round(d.tmax) }}°
                 </span>
               </div>
             </div>
@@ -471,269 +453,290 @@
             </button>
           </div>
 
-
-
           <!-- 行程 Timeline（拖曳排序 + Modal 編輯） -->
           <div class="space-y-4 mt-4">
-            <!-- 上方：操作列 -->
-            <div class="flex items-center justify-between gap-2 mb-1">
-              <!-- <div class="text-xs text-slate-400">
-                拖曳卡片可調整順序，點一下可編輯詳細內容
-              </div> -->
-              <div class="flex items-center gap-2">
-                <button
-                @click="addItem"
-                class="flex items-center gap-1 text-xs px-2 py-1 rounded-full bg-teal-100 text-teal-800 border border-teal-300 hover:bg-teal-200"
+            <!-- Timeline 主體 -->
+            <div class="relative pl-4 border-l border-teal-300">
+              <!-- 可拖曳區：只包行程卡片 -->
+              <div class="space-y-3" ref="timelineRef">
+                <div
+                  v-for="(item, idx) in currentDay.items"
+                  :key="idx"
+                  class="relative group sortable-item"
                 >
-                <i class="ph-bold ph-plus"></i>
-                新增行程
-                </button>
-                <button
-                  @click="removeCurrentDay"
-                  class="flex items-center gap-1 text-[11px] px-2 py-1 rounded-full bg-slate-800 text-slate-300 border border-slate-600 hover:border-red-400 hover:text-red-300"
+                  <!-- 節點 -->
+                  <div
+                    class="absolute -left-[21px] top-1/2 -translate-y-1/2 w-3 h-3 rounded-full border-2 border-slate-900 shadow-sm"
+                    :class="getDotColor(item.type)"
+                  ></div>
+
+                  <!-- 行程卡片 -->
+                  <div
+                    class="bg-white hover:bg-teal-50 rounded-2xl border border-slate-200 hover:border-teal-400/70 shadow-sm hover:shadow-lg transition flex items-center gap-3 px-3 py-2 cursor-pointer"
+                    @click="openEditModal(idx)"
+                  >
+                    <!-- 左：時間 -->
+                    <div class="flex flex-col items-center justify-center w-[3.5rem]">
+                      <div class="text-[10px] text-slate-400 mb-0.5">
+                        {{ getTimePeriod(item.time) }}
+                      </div>
+                      <div class="text-lg font-mono font-semibold text-slate-900">
+                        {{ item.time || '--:--' }}
+                      </div>
+                    </div>
+
+                    <!-- 中：標題 + 地點 -->
+                    <div class="flex-1 min-w-0">
+                      <div class="flex items-center gap-2">
+                        <p
+                          class="text-base font-semibold truncate"
+                          :class="item.activity ? 'text-slate-900' : 'text-slate-400 italic'"
+                        >
+                          {{ item.activity || '行程內容' }}
+                        </p>
+                        <span
+                          v-if="item.transport"
+                          class="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-full bg-slate-900/70 text-slate-300 border border-slate-600"
+                        >
+                          <i class="ph-bold ph-route text-[11px]"></i>
+                          {{ item.transport }}
+                        </span>
+                      </div>
+
+                      <p
+                        v-if="item.location"
+                        class="text-[11px] text-slate-300 mt-0.5 truncate"
+                      >
+                        {{ item.location }}
+                      </p>
+                      <p
+                        v-if="item.note"
+                        class="text-[11px] text-slate-400 mt-0.5 overflow-hidden text-ellipsis whitespace-nowrap"
+                      >
+                        {{ item.note }}
+                      </p>
+
+                      <!-- 用 Google Maps 導航 -->
+                      <button
+                        v-if="
+                          idx > 0 &&
+                          item.location &&
+                          currentDay.items[idx - 1] &&
+                          currentDay.items[idx - 1].location
+                        "
+                        @click.stop="openGoogleRoute(idx)"
+                        class="mt-1 inline-flex items-center gap-1 text-[10px] text-sky-600 hover:text-sky-500 underline"
+                      >
+                        <i class="ph-bold ph-navigation-arrow text-[11px]"></i>
+                        用 Google Maps 導航
+                      </button>
+                    </div>
+
+                    <!-- 右：操作 -->
+                    <div class="flex flex-col items-end gap-1">
+                      <!-- 拖曳把手 -->
+                      <div
+                        class="p-1 rounded-full hover:bg-slate-700 cursor-grab drag-handle"
+                        title="拖曳調整順序"
+                      >
+                        <i class="ph-bold ph-dots-six-vertical text-xs"></i>
+                      </div>
+
+                      <button
+                        class="p-1 rounded-full hover:bg-slate-700"
+                        @click.stop="openEditModal(idx)"
+                        title="編輯"
+                      >
+                        <i class="ph-bold ph-note-pencil text-xs"></i>
+                      </button>
+                      <button
+                        class="p-1 rounded-full hover:bg-slate-700"
+                        @click.stop="removeItem(idx)"
+                        title="刪除"
+                      >
+                        <i class="ph-bold ph-trash text-xs text-rose-400"></i>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- 沒有行程時的提示 -->
+                <div
+                  v-if="currentDay.items.length === 0"
+                  class="text-xs text-slate-400 text-center py-4"
                 >
-                  <i class="ph-bold ph-trash"></i>
-                  刪除這一天
+                  還沒有行程，先按下方「新增行程」開始安排吧！
+                </div>
+              </div>
+
+              <!-- 新增行程：在 timeline 最下方 -->
+              <div class="mt-3 relative">
+                <!-- 左邊小圓點 -->
+                <div
+                  class="absolute -left-[21px] top-1/2 -translate-y-1/2 w-3 h-3 rounded-full bg-teal-300 shadow-sm"
+                ></div>
+                <button
+                  @click="addItem"
+                  class="inline-flex items-center gap-1 text-xs text-teal-400 hover:text-teal-300"
+                >
+                  <i class="ph-bold ph-plus text-xs"></i>
+                  新增行程
                 </button>
               </div>
             </div>
 
-            <!-- Timeline 主體 -->
-            <div
-            class="relative pl-4 border-l border-slate-700 space-y-3"
-            ref="timelineRef"
-            >
-                <div
-                v-for="(item, idx) in currentDay.items"
-                :key="idx"
-                class="relative group"
+            <!-- 下方：橫線 + 刪除這一天 -->
+            <div class="pt-4">
+              <div class="border-t border-slate-200 mb-3"></div>
+              <div class="flex justify-center">
+                <button
+                  @click="removeCurrentDay"
+                  class="flex items-center gap-1 text-[11px] text-rose-300 hover:text-rose-400"
                 >
-                <!-- 節點 -->
-                <div
-                  class="absolute -left-[21px] top-1/2 -translate-y-1/2 w-3 h-3 rounded-full border-2 border-slate-900 shadow-sm"
-                  :class="getDotColor(item.type)"
-                ></div>
+                  <i class="ph-bold ph-trash text-xs"></i>
+                  刪除這一天
+                </button>
+              </div>
+            </div>
+          </div>
 
-                <!-- 行程卡片 -->
-                <div
-                class="bg-white hover:bg-teal-50 rounded-2xl border border-slate-200 hover:border-teal-400/70 shadow-sm hover:shadow-lg transition flex items-center gap-3 px-3 py-2 cursor-pointer"
-                @click="openEditModal(idx)"
-                >
-                  <!-- 左：時間 -->
-                  <div class="flex flex-col items-center justify-center w-[3.5rem]">
-                    <div class="text-[10px] text-slate-400 mb-0.5">
-                      {{ getTimePeriod(item.time) }}
-                    </div>
-                    <div class="text-lg font-mono font-semibold text-slate-900">
-                      {{ item.time || '--:--' }}
-                    </div>
-                  </div>
+      </transition>
 
-                  <!-- 中：標題 + 地點 -->
-                  <div class="flex-1 min-w-0">
-                    <div class="flex items-center gap-2">
-                        <p
-                        class="text-base font-semibold truncate"
-                        :class="item.activity ? 'text-slate-900' : 'text-slate-400 italic'"
-                        >
-                        {{ item.activity || '行程內容' }}
-                        </p>
-                      <span
-                        v-if="item.transport"
-                        class="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-full bg-slate-900/70 text-slate-300 border border-slate-600"
-                      >
-                        <i class="ph-bold ph-route text-[11px]"></i>
-                        {{ item.transport }}
-                      </span>
-                    </div>
-                    <p
-                      v-if="item.location"
-                      class="text-[11px] text-slate-300 mt-0.5 truncate"
-                    >
-                      {{ item.location }}
-                    </p>
-                    <p
-                      v-if="item.note"
-                      class="text-[11px] text-slate-400 mt-0.5 overflow-hidden text-ellipsis whitespace-nowrap"
-                    >
-                      {{ item.note }}
-                    </p>
-                  </div>
+      <!-- 編輯行程 Modal -->
+      <transition name="fade">
+        <div
+          v-if="viewMode === 'plan' && editModalVisible"
+          class="fixed inset-0 z-40 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm px-4"
+        >
+          <div class="w-full max-w-sm bg-white rounded-3xl border border-slate-200 shadow-2xl p-5">
+            <div class="flex items-center justify-between mb-3">
+              <h2 class="text-lg font-bold text-slate-900 flex items-center gap-1">
+                <i class="ph-bold ph-map-pin text-teal-500"></i>
+                編輯行程
+              </h2>
+              <button
+                @click="closeEditModal"
+                class="text-slate-400 hover:text-slate-700"
+              >
+                <i class="ph-bold ph-x text-lg"></i>
+              </button>
+            </div>
 
-                  <!-- 右：操作 -->
-                    <div class="flex flex-col items-end gap-1">
-                    <!-- 拖曳把手 -->
-                    <div
-                        class="p-1 rounded-full hover:bg-slate-700 cursor-grab drag-handle"
-                        title="拖曳調整順序"
-                    >
-                        <i class="ph-bold ph-dots-six-vertical text-xs"></i>
-                    </div>
+            <div class="space-y-3 text-sm">
+              <div>
+                <label class="block mb-1 text-slate-600 text-xs">時間</label>
+                <input
+                  v-model="editForm.time"
+                  type="time"
+                  class="w-full rounded-xl bg-slate-50 border border-slate-300 px-3 py-2 text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400/70"
+                />
+              </div>
 
-                    <button
-                        class="p-1 rounded-full hover:bg-slate-700"
-                        @click.stop="openEditModal(idx)"
-                        title="編輯"
-                    >
-                        <i class="ph-bold ph-note-pencil text-xs"></i>
-                    </button>
-                    <button
-                        class="p-1 rounded-full hover:bg-slate-700"
-                        @click.stop="removeItem(idx)"
-                        title="刪除"
-                    >
-                        <i class="ph-bold ph-trash text-xs text-rose-400"></i>
-                    </button>
-                    </div>
+              <div>
+                <label class="block mb-1 text-slate-600 text-xs">行程標題</label>
+                <input
+                  v-model="editForm.activity"
+                  type="text"
+                  placeholder="例如：上野公園散步"
+                  class="w-full rounded-xl bg-slate-50 border border-slate-300 px-3 py-2 text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400/70"
+                />
+              </div>
 
+              <div>
+                <label class="block mb-1 text-slate-600 text-xs">地點名稱 / 地址</label>
+                <input
+                  v-model="editForm.location"
+                  type="text"
+                  placeholder="輸入地點，方便之後開地圖或查餐廳"
+                  class="w-full rounded-xl bg-slate-50 border border-slate-300 px-3 py-2 text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400/70"
+                />
+              </div>
+
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <label class="block mb-1 text-slate-600 text-xs">類型</label>
+                  <select
+                    v-model="editForm.type"
+                    class="w-full rounded-xl bg-slate-50 border border-slate-300 px-3 py-2 text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400/70"
+                  >
+                    <option value="spot">📍 景點</option>
+                    <option value="food">🍴 美食</option>
+                    <option value="shop">🛍️ 購物</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="block mb-1 text-slate-600 text-xs">交通方式</label>
+                  <select
+                    v-model="editForm.transport"
+                    class="w-full rounded-xl bg-slate-50 border border-slate-300 px-3 py-2 text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400/70"
+                  >
+                    <option value="">不指定</option>
+                    <option value="開車">開車</option>
+                    <option value="大眾運輸">大眾運輸</option>
+                    <option value="走路">走路</option>
+                  </select>
                 </div>
               </div>
 
-              <!-- 沒有行程 -->
-              <div
-                v-if="currentDay.items.length === 0"
-                class="text-xs text-slate-400 text-center py-6"
-              >
-                還沒有行程，按右上方「新增行程」開始規劃吧！
+              <div>
+                <label class="block mb-1 text-slate-600 text-xs">備註</label>
+                <textarea
+                  v-model="editForm.note"
+                  rows="3"
+                  placeholder="可以補充集合地點、訂位資訊、票券編號等"
+                  class="w-full rounded-xl bg-slate-50 border border-slate-300 px-3 py-2 text-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-teal-400/70"
+                ></textarea>
               </div>
+
+              <div>
+                <label class="block mb-1 text-slate-600 text-xs">停留時間</label>
+                <div class="flex items-center gap-2">
+                  <select
+                    v-model.number="editForm.stayHours"
+                    class="flex-1 rounded-xl bg-slate-50 border border-slate-300 px-3 py-2 text-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-teal-400/70"
+                  >
+                    <option :value="h" v-for="h in [0,1,2,3,4,5]" :key="'h'+h">
+                      {{ h }} 小時
+                    </option>
+                  </select>
+                  <select
+                    v-model.number="editForm.stayMinutes"
+                    class="flex-1 rounded-xl bg-slate-50 border border-slate-300 px-3 py-2 text-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-teal-400/70"
+                  >
+                    <option :value="m" v-for="m in [0,15,30,45]" :key="'m'+m">
+                      {{ m }} 分鐘
+                    </option>
+                  </select>
+                </div>
+                <div class="border-t border-slate-200 pt-2 mt-2 text-[11px] flex items-center justify-between text-slate-600">
+                  <span>預估離開時間</span>
+                  <span class="font-mono text-teal-600">
+                    {{ estimatedLeaveTime || '--:--' }}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div class="mt-4 flex justify-end gap-2 text-sm">
+              <button
+                @click="closeEditModal"
+                class="px-3 py-1.5 rounded-full border border-slate-300 text-slate-600 hover:bg-slate-100"
+              >
+                取消
+              </button>
+              <button
+                @click="saveEdit"
+                class="px-3 py-1.5 rounded-full bg-teal-500 text-white font-semibold hover:bg-teal-400"
+              >
+                儲存
+              </button>
             </div>
           </div>
         </div>
       </transition>
 
-        <!-- 編輯行程 Modal -->
-        <transition name="fade">
-        <div
-            v-if="viewMode === 'plan' && editModalVisible"
-            class="fixed inset-0 z-40 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm px-4"
-        >
-            <div class="w-full max-w-sm bg-white rounded-3xl border border-slate-200 shadow-2xl p-5">
-            <div class="flex items-center justify-between mb-3">
-                <h2 class="text-lg font-bold text-slate-900 flex items-center gap-1">
-                <i class="ph-bold ph-map-pin text-teal-500"></i>
-                編輯行程
-                </h2>
-                <button
-                @click="closeEditModal"
-                class="text-slate-400 hover:text-slate-700"
-                >
-                <i class="ph-bold ph-x text-lg"></i>
-                </button>
-            </div>
-
-            <div class="space-y-3 text-sm">
-                <div>
-                <label class="block mb-1 text-slate-600 text-xs">時間</label>
-                <input
-                    v-model="editForm.time"
-                    type="time"
-                    class="w-full rounded-xl bg-slate-50 border border-slate-300 px-3 py-2 text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400/70"
-                />
-                </div>
-
-                <div>
-                <label class="block mb-1 text-slate-600 text-xs">行程標題</label>
-                <input
-                    v-model="editForm.activity"
-                    type="text"
-                    placeholder="例如：上野公園散步"
-                    class="w-full rounded-xl bg-slate-50 border border-slate-300 px-3 py-2 text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400/70"
-                />
-                </div>
-
-                <div>
-                <label class="block mb-1 text-slate-600 text-xs">地點名稱 / 地址</label>
-                <input
-                    v-model="editForm.location"
-                    type="text"
-                    placeholder="輸入地點，方便之後開地圖或查餐廳"
-                    class="w-full rounded-xl bg-slate-50 border border-slate-300 px-3 py-2 text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400/70"
-                />
-                </div>
-
-                <div class="grid grid-cols-2 gap-3">
-                <div>
-                    <label class="block mb-1 text-slate-600 text-xs">類型</label>
-                    <select
-                    v-model="editForm.type"
-                    class="w-full rounded-xl bg-slate-50 border border-slate-300 px-3 py-2 text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400/70"
-                    >
-                    <option value="spot">📍 景點</option>
-                    <option value="food">🍴 美食</option>
-                    <option value="shop">🛍️ 購物</option>
-                    </select>
-                </div>
-                <div>
-                    <label class="block mb-1 text-slate-600 text-xs">交通方式</label>
-                    <input
-                    v-model="editForm.transport"
-                    type="text"
-                    placeholder="步行 / 地鐵 / 巴士..."
-                    class="w-full rounded-xl bg-slate-50 border border-slate-300 px-3 py-2 text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400/70"
-                    />
-                </div>
-                </div>
-
-                <div>
-                <label class="block mb-1 text-slate-600 text-xs">備註</label>
-                <textarea
-                    v-model="editForm.note"
-                    rows="3"
-                    placeholder="可以補充集合地點、訂位資訊、票券編號等"
-                    class="w-full rounded-xl bg-slate-50 border border-slate-300 px-3 py-2 text-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-teal-400/70"
-                ></textarea>
-                </div>
-
-                <div>
-                <label class="block mb-1 text-slate-600 text-xs">停留時間</label>
-                <div class="flex items-center gap-2">
-                    <select
-                    v-model.number="editForm.stayHours"
-                    class="flex-1 rounded-xl bg-slate-50 border border-slate-300 px-3 py-2 text-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-teal-400/70"
-                    >
-                    <option :value="h" v-for="h in [0,1,2,3,4,5]" :key="'h'+h">
-                        {{ h }} 小時
-                    </option>
-                    </select>
-                    <select
-                    v-model.number="editForm.stayMinutes"
-                    class="flex-1 rounded-xl bg-slate-50 border border-slate-300 px-3 py-2 text-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-teal-400/70"
-                    >
-                    <option :value="m" v-for="m in [0,15,30,45]" :key="'m'+m">
-                        {{ m }} 分鐘
-                    </option>
-                    </select>
-                </div>
-                <div class="border-t border-slate-200 pt-2 mt-2 text-[11px] flex items-center justify-between text-slate-600">
-                    <span>預估離開時間</span>
-                    <span class="font-mono text-teal-600">
-                    {{ estimatedLeaveTime || '--:--' }}
-                    </span>
-                </div>
-                </div>
-            </div>
-
-            <div class="mt-4 flex justify-end gap-2 text-sm">
-                <button
-                @click="closeEditModal"
-                class="px-3 py-1.5 rounded-full border border-slate-300 text-slate-600 hover:bg-slate-100"
-                >
-                取消
-                </button>
-                <button
-                @click="saveEdit"
-                class="px-3 py-1.5 rounded-full bg-teal-500 text-white font-semibold hover:bg-teal-400"
-                >
-                儲存
-                </button>
-            </div>
-            </div>
-        </div>
-        </transition>
-
-
       <!-- 地圖視圖 -->
-    <div v-if="viewMode === 'map'" class="h-full flex flex-col relative">
+      <div v-if="viewMode === 'map'" class="h-full flex flex-col relative">
         <div id="map" class="flex-1 w-full h-full bg-slate-100 z-0"></div>
         <div v-if="isMapLoading" class="absolute inset-0 bg-slate-950/70 backdrop-blur-sm z-10 flex flex-col items-center justify-center text-teal-200">
           <i class="ph-duotone ph-spinner animate-spin text-4xl mb-2"></i>
@@ -763,10 +766,10 @@
           <div class="absolute top-4 right-4 flex flex-col items-end">
             <label class="text-[10px] text-teal-100 mb-1">({{ currencyLabel }})</label>
             <input
-            v-model.number="exchangeRate"
-            type="number"
-            step="0.01"
-            class="w-24 text-right text-xs bg-white text-slate-700 border border-slate-200 rounded px-1.5 py-0.5"
+              v-model.number="exchangeRate"
+              type="number"
+              step="0.01"
+              class="w-24 text-right text-xs bg-white text-slate-700 border border-slate-200 rounded px-1.5 py-0.5"
             />
           </div>
           <p class="text-xs font-semibold text-teal-700 mb-1 flex items-center justify-center gap-1">
@@ -795,36 +798,36 @@
               新增成員
             </button>
           </div>
-            <div class="bg-slate-50 rounded-xl border border-slate-200 p-2 space-y-1 max-h-40 overflow-y-auto hide-scroll">
+          <div class="bg-slate-50 rounded-xl border border-slate-200 p-2 space-y-1 max-h-40 overflow-y-auto hide-scroll">
             <div
-                v-for="(p, idx) in participants"
-                :key="idx"
-                class="flex items-center justify-between gap-2 px-2 py-1 rounded-lg hover:bg-slate-100"
+              v-for="(p, idx) in participants"
+              :key="idx"
+              class="flex items-center justify-between gap-2 px-2 py-1 rounded-lg hover:bg-slate-100"
             >
-                <div class="flex items-center gap-2">
+              <div class="flex items-center gap-2">
                 <div class="w-6 h-6 rounded-full bg-emerald-50 border border-emerald-300 flex items-center justify-center text-[11px] text-emerald-600">
-                    {{ p?.[0] || '?' }}
+                  {{ p?.[0] || '?' }}
                 </div>
                 <div class="flex flex-col">
-                    <input
+                  <input
                     :value="p"
                     @change="renameParticipant(idx, $event.target.value)"
                     class="bg-transparent border-none text-xs text-slate-800 focus:outline-none focus:ring-0"
-                    />
-                    <span class="text-[10px] text-slate-500">
+                  />
+                  <span class="text-[10px] text-slate-500">
                     已支付：{{ (paidByPerson[p] || 0).toLocaleString() }} {{ currencySymbol }}
-                    </span>
+                  </span>
                 </div>
-                </div>
-                <button
+              </div>
+              <button
                 v-if="participants.length > 1"
                 @click="removeParticipant(idx)"
                 class="text-slate-400 hover:text-rose-500"
-                >
+              >
                 <i class="ph-bold ph-x text-xs"></i>
-                </button>
+              </button>
             </div>
-            </div>
+          </div>
         </div>
 
         <div class="bg-white rounded-2xl border border-slate-200 p-3 space-y-3">
@@ -834,14 +837,14 @@
               記帳
             </p>
           </div>
-        
-          <!-- 這邊改版：用垂直排版，避免在手機擠爆 -->
+
+          <!-- 垂直排版，手機友善 -->
           <div class="mb-2 space-y-2">
             <!-- 消費項目：整行 -->
             <input
-                v-model="newExpense.item"
-                class="w-full text-xs rounded-xl bg-slate-50 border border-slate-300 text-slate-900 px-2 py-1 focus:outline-none focus:ring-1 focus:ring-teal-400"
-                placeholder="消費項目，例如：午餐、車票..."
+              v-model="newExpense.item"
+              class="w-full text-xs rounded-xl bg-slate-50 border border-slate-300 text-slate-900 px-2 py-1 focus:outline-none focus:ring-1 focus:ring-teal-400"
+              placeholder="消費項目，例如：午餐、車票..."
             />
             <!-- 金額 + 付款人：並排兩欄 -->
             <div class="flex gap-2">
@@ -861,7 +864,7 @@
                 </option>
               </select>
             </div>
-            <!-- 新增按鈕：手機用滿版，桌機可再自行改 class -->
+            <!-- 新增按鈕：手機用滿版 -->
             <button
               @click="addExpense"
               class="w-full px-2 py-2 rounded-xl bg-teal-500 text-slate-950 text-xs font-semibold hover:bg-teal-400"
@@ -869,13 +872,13 @@
               新增
             </button>
           </div>
-        
-          <!-- 下面原本的支出列表保持不變 -->
+
+          <!-- 支出列表 -->
           <div class="space-y-1 max-h-44 overflow-y-auto hide-scroll">
             <div
-            v-for="(e, idx) in expenses"
-            :key="idx"
-            class="flex items-center justify-between px-2 py-1 rounded-lg bg-slate-50 border border-slate-200 text-xs"
+              v-for="(e, idx) in expenses"
+              :key="idx"
+              class="flex items-center justify-between px-2 py-1 rounded-lg bg-slate-50 border border-slate-200 text-xs"
             >
               <div class="flex-1 min-w-0">
                 <p class="font-semibold text-slate-800 truncate">
@@ -906,7 +909,7 @@
               還沒有任何支出紀錄，新增一筆看看吧！
             </div>
           </div>
-        </div>        
+        </div>
 
         <div class="bg-white rounded-2xl border border-slate-200 p-3">
           <div class="flex items-center justify-between mb-2">
@@ -917,9 +920,9 @@
           </div>
           <div v-if="settlementPlan.length" class="space-y-1 max-h-32 overflow-y-auto hide-scroll">
             <div
-            v-for="(item, idx) in settlementPlan"
-            :key="idx"
-            class="flex items-center justify-between px-2 py-1 rounded-lg bg-slate-50 border border-slate-200 text-xs"
+              v-for="(item, idx) in settlementPlan"
+              :key="idx"
+              class="flex items-center justify-between px-2 py-1 rounded-lg bg-slate-50 border border-slate-200 text-xs"
             >
               <div class="flex items-center gap-1">
                 <span class="font-semibold text-slate-800">{{ item.from }}</span>
@@ -943,10 +946,10 @@
       <div v-if="viewMode === 'checklist'" class="p-4 space-y-3">
         <!-- 上方標題＋新增清單 -->
         <div class="flex items-center justify-between mb-1">
-            <div class="text-xs font-semibold text-slate-700 flex items-center gap-1">
-                <i class="ph-bold ph-clipboard-text text-emerald-500"></i>
-                <span>行前清單</span>
-        </div>
+          <div class="text-xs font-semibold text-slate-700 flex items-center gap-1">
+            <i class="ph-bold ph-clipboard-text text-emerald-500"></i>
+            <span>行前清單</span>
+          </div>
           <button
             @click="addChecklistSection"
             class="text-[11px] px-2 py-1 rounded-full border border-slate-600 text-slate-300 hover:border-teal-400 hover:text-teal-200 flex items-center gap-1"
@@ -958,11 +961,11 @@
 
         <!-- 各個清單區塊 -->
         <div class="space-y-3">
-            <div
+          <div
             v-for="section in checklistSections"
             :key="section.id"
             class="bg-white rounded-2xl border border-slate-200 overflow-hidden"
-            >
+          >
             <!-- 清單標題列 -->
             <div
               :class="[
@@ -970,7 +973,7 @@
                 section.color
               ]"
             >
-              <div class="flex items-center gap-2">            
+              <div class="flex items-center gap-2">
                 <div>
                   <!-- 標題可直接編輯 -->
                   <input
@@ -986,10 +989,10 @@
 
               <div class="flex items-center gap-2">
                 <div class="w-16 h-1 rounded-full bg-slate-200 overflow-hidden">
-                <div
+                  <div
                     class="h-full rounded-full bg-emerald-400"
                     :style="{ width: sectionProgress(section) + '%' }"
-                ></div>
+                  ></div>
                 </div>
                 <span class="text-[10px] font-semibold">
                   {{ sectionProgress(section) }}%
@@ -1061,7 +1064,7 @@
           @click="viewMode = 'plan'"
           class="flex-1 flex flex-col items-center justify-center py-2 text-[11px]"
           :class="viewMode === 'plan' ? 'text-emerald-500' : 'text-slate-500 hover:text-slate-800'"
-        > 
+        >
           <i class="ph-bold ph-note-pencil mb-0.5 text-lg"></i>
           行程
         </button>
@@ -1096,7 +1099,7 @@
     <transition name="fade">
       <div
         v-if="showShareModal"
-        class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/90 px-4"
+        class="fixed inset-0 z-50flex items-center justify-center bg-slate-950/90 px-4"
       >
         <div class="w-full max-w-sm bg-white rounded-3xl border border-slate-200 shadow-2xl p-4 flex flex-col">
           <div class="flex items-center justify-between mb-2">
@@ -1212,8 +1215,7 @@
       </div>
     </transition>
 
-    <!-- Setup Modal -->
-        <!-- Setup Modal（改成淺色版） -->
+    <!-- Setup Modal（新建 / 編輯共用） -->
     <transition name="fade">
       <div
         v-if="showSetupModal"
@@ -1226,14 +1228,18 @@
                 <i class="ph-bold ph-map-pin-line text-emerald-500 text-lg"></i>
               </span>
               <div>
-                <h2 class="text-sm font-bold text-slate-900">建立新旅程</h2>
+                <h2 class="text-sm font-bold text-slate-900">
+                  {{ isEditingTrip ? '編輯旅程' : '建立新旅程' }}
+                </h2>
                 <p class="text-[10px] text-slate-500">
-                  先設定目的地與日期，我會幫你產生基本行程架構
+                  {{ isEditingTrip
+                    ? '可以調整旅程日期與目的地，既有行程內容會保留。'
+                    : '先設定目的地與日期，我會幫你產生基本行程架構' }}
                 </p>
               </div>
             </div>
             <button
-              @click="showSetupModal = false"
+              @click="cancelSetup"
               class="text-slate-400 hover:text-slate-700"
             >
               <i class="ph-bold ph-x text-base"></i>
@@ -1297,17 +1303,24 @@
 
           <div class="mt-4 flex justify-end gap-2 text-[11px]">
             <button
-              @click="showSetupModal = false"
+              @click="cancelSetup"
               class="px-3 py-1.5 rounded-full border border-slate-300 text-slate-700 hover:bg-slate-100"
             >
               先不用
             </button>
             <button
-              @click="initTrip"
+              @click="isEditingTrip ? saveTripEdit() : initTrip()"
               class="px-3 py-1.5 rounded-full bg-emerald-500 text-white font-semibold hover:bg-emerald-400 flex items-center gap-1"
             >
-              <i class="ph-bold ph-rocket-launch text-xs"></i>
-              建立旅程
+              <i
+                v-if="!isEditingTrip"
+                class="ph-bold ph-rocket-launch text-xs"
+              ></i>
+              <i
+                v-else
+                class="ph-bold ph-floppy-disk text-xs"
+              ></i>
+              {{ isEditingTrip ? '儲存變更' : '建立旅程' }}
             </button>
           </div>
         </div>
@@ -1363,15 +1376,14 @@
 
     /* ----------------- 小工具：天氣 icon map ----------------- */
     const WEATHER_ICON_MAP = [
-        { codes: [0], icon: '☀️' },
-        { codes: [1, 2, 3], icon: '⛅' },
-        { codes: [45, 48], icon: '🌫️' },
-        { codes: [51, 53, 55, 56, 57], icon: '🌦️' },
-        { codes: [61, 63, 65, 66, 67, 80, 81, 82], icon: '🌧️' },
-        { codes: [71, 73, 75, 77, 85, 86], icon: '❄️' },
-        { codes: [95, 96, 99], icon: '⛈️' },
+      { codes: [0], icon: '☀️' },
+      { codes: [1, 2, 3], icon: '⛅' },
+      { codes: [45, 48], icon: '🌫️' },
+      { codes: [51, 53, 55, 56, 57], icon: '🌦️' },
+      { codes: [61, 63, 65, 66, 67, 80, 81, 82], icon: '🌧️' },
+      { codes: [71, 73, 75, 77, 85, 86], icon: '❄️' },
+      { codes: [95, 96, 99], icon: '⛈️' },
     ];
-
 
     const getWeatherIconHelper = (code) => {
       const found = WEATHER_ICON_MAP.find((g) => g.codes.includes(code));
@@ -1385,21 +1397,21 @@
     const geocodeCache = new Map(); // key: location string, value: { lat, lon }
 
     const geocodeLocation = async (location) => {
-        if (!location) return null;
-        if (geocodeCache.has(location)) {
-            return geocodeCache.get(location);
-        }
+      if (!location) return null;
+      if (geocodeCache.has(location)) {
+        return geocodeCache.get(location);
+      }
 
-        const res = await fetch(
-            `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(location)}&limit=1`
-        );
-        const d = await res.json();
-        if (!d?.length) return null;
+      const res = await fetch(
+        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(location)}&limit=1`
+      );
+      const d = await res.json();
+      if (!d?.length) return null;
 
-        const { lat, lon } = d[0];
-        const result = { lat: +lat, lon: +lon };
-        geocodeCache.set(location, result);
-        return result;
+      const { lat, lon } = d[0];
+      const result = { lat: +lat, lon: +lon };
+      geocodeCache.set(location, result);
+      return result;
     };
 
     createApp({
@@ -1408,7 +1420,10 @@
         const viewMode = ref('plan');
         const currentDayIdx = ref(0);
         const isOnline = ref(false);
+
         const showSetupModal = ref(false);
+        const isEditingTrip = ref(false);
+        const editingTripId = ref(null);
 
         const timelineRef = ref(null);
         let sortable = null;
@@ -1431,45 +1446,45 @@
 
         const currentTitle = computed(() => {
           const t = tripList.value.find(t => t.id === currentTripId.value);
-          // 優先顯示旅程名稱，其次是 setup.destination，最後退回預設文字
           return t?.name || setup.value.destination || '我的旅遊行程';
         });
 
         const initSortable = () => {
-            if (!timelineRef.value) return;
+          if (!timelineRef.value) return;
 
-            // 先把舊的實例砍掉，避免重複綁定
-            if (sortable) {
-                sortable.destroy();
-                sortable = null;
-            }
+          if (sortable) {
+            sortable.destroy();
+            sortable = null;
+          }
 
-            sortable = new Sortable(timelineRef.value, {
-                animation: 150,
-                handle: '.drag-handle',   // 只有抓這顆 icon 才會拖
-                ghostClass: 'bg-teal-50', // 拖曳中套用的 class（可有可無）
-                onEnd(evt) {
-                const oldIndex = evt.oldIndex;
-                const newIndex = evt.newIndex;
-                if (oldIndex === newIndex) return;
+          sortable = new Sortable(timelineRef.value, {
+            animation: 150,
+            handle: '.drag-handle',
+            draggable: '.sortable-item',   // 只讓行程卡片可以拖曳
+            ghostClass: 'bg-teal-50',
+            onEnd(evt) {
+              const oldIndex = evt.oldIndex;
+              const newIndex = evt.newIndex;
+              if (oldIndex === newIndex) return;
 
-                const list = currentDay.value.items;
-                if (!list || oldIndex < 0 || newIndex < 0 ||
-                    oldIndex >= list.length || newIndex >= list.length) {
-                    return;
-                }
+              const list = currentDay.value.items;
+              if (!list ||
+                  oldIndex < 0 ||
+                  newIndex < 0 ||
+                  oldIndex >= list.length ||
+                  newIndex >= list.length) {
+                return;
+              }
 
-                const [moved] = list.splice(oldIndex, 1);
-                list.splice(newIndex, 0, moved);
-                },
-            });
-            };
-
+              const [moved] = list.splice(oldIndex, 1);
+              list.splice(newIndex, 0, moved);
+            },
+          });
+        };
 
         /* ========== 分享行程 ========== */
         const showShareModal = ref(false);
 
-        // 給系統分享用的簡短文字
         const shareSummary = computed(() => {
           const trip = tripList.value.find(t => t.id === currentTripId.value) || null;
           const title =
@@ -1485,7 +1500,6 @@
           return `${title}${range ? '｜' + range : ''}\n共 ${dayCount} 天行程，已記錄 ${expenseCount} 筆支出。`;
         });
 
-        // 完整 JSON（可以貼給朋友，也可以當備份）
         const shareJson = computed(() => {
           if (!currentTripId.value) return '';
           const trip = tripList.value.find(t => t.id === currentTripId.value) || null;
@@ -1522,7 +1536,6 @@
         };
 
         const systemShare = async () => {
-          // 若瀏覽器不支援 Web Share，就退回只複製文字
           if (!navigator.share) {
             await copyShare();
             return;
@@ -1531,7 +1544,7 @@
             await navigator.share({
               title: '我的旅遊行程',
               text: shareSummary.value,
-              url: location.href, // 同一個頁面網址
+              url: location.href,
             });
           } catch (e) {
             console.error(e);
@@ -1625,7 +1638,6 @@
 
         const removeExpense = (idx) => expenses.value.splice(idx, 1);
 
-        /* 成員操作 */
         const addParticipant = () => {
           const baseName = '成員';
           let idx = participants.value.length + 1;
@@ -1820,13 +1832,12 @@
           startDate: '',
           endDate: '',
           daysCount: 3,
-          countryCode: 'tw',      // ISO 3166-1 alpha2，例如 JP / KR / US
-          currencyCode: 'TWD',    // 貨幣代碼，例如 JPY / USD
-          currencyName: '新台幣', // 貨幣中文名稱
-          currencySymbol: 'NT$',  // 貨幣符號，例如 ¥ / $
-          rate: 1,                // 1 外幣 = N TWD
+          countryCode: 'tw',
+          currencyCode: 'TWD',
+          currencyName: '新台幣',
+          currencySymbol: 'NT$',
+          rate: 1,
         });
-
 
         const currencyLabel = computed(() => {
           const code = setup.value.currencyCode;
@@ -1837,7 +1848,7 @@
         });
 
         const currencySymbol = computed(() => {
-          return setup.value.currencySymbol || ''; // 直接用 API 回來的符號
+          return setup.value.currencySymbol || '';
         });
 
         const weatherDisplay = computed(() => {
@@ -1862,32 +1873,31 @@
         const getWeatherIcon = (code) =>
           getWeatherIconHelper(code);
 
-          const fetchWeather = async (locName) => {
-            try {
-                if (!locName) return;
-                weather.value.location = locName;
+        const fetchWeather = async (locName) => {
+          try {
+            if (!locName) return;
+            weather.value.location = locName;
 
-                const geoRes = await fetch(
-                `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(locName)}&limit=1`
-                );
-                const geoData = await geoRes.json();
-                if (!geoData?.length) return;
+            const geoRes = await fetch(
+              `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(locName)}&limit=1`
+            );
+            const geoData = await geoRes.json();
+            if (!geoData?.length) return;
 
-                const { lat, lon } = geoData[0];
+            const { lat, lon } = geoData[0];
 
-                const wRes = await fetch(
-                `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true&daily=weathercode,temperature_2m_max,temperature_2m_min&timezone=auto&forecast_days=16`
-                );
-                const wData = await wRes.json();
+            const wRes = await fetch(
+              `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true&daily=weathercode,temperature_2m_max,temperature_2m_min&timezone=auto&forecast_days=16`
+            );
+            const wData = await wRes.json();
 
-                weather.value.temp = Math.round(wData.current_weather.temperature);
-                weather.value.icon = getWeatherIconHelper(wData.current_weather.weathercode);
-                if (wData.daily) weather.value.daily = wData.daily;
-            } catch (e) {
-                console.error('weather error', e);
-            }
+            weather.value.temp = Math.round(wData.current_weather.temperature);
+            weather.value.icon = getWeatherIconHelper(wData.current_weather.weathercode);
+            if (wData.daily) weather.value.daily = wData.daily;
+          } catch (e) {
+            console.error('weather error', e);
+          }
         };
-
 
         const handleWeatherUpdate = async () => {
           let target =
@@ -1912,7 +1922,6 @@
           isRateLoading.value = true;
 
           try {
-            // 1. 用 Nominatim 找出城市 → 取得國家代碼
             const geoRes = await fetch(
               `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(
                 setup.value.destination
@@ -1922,10 +1931,9 @@
             if (!geoData?.length) return;
 
             const addr = geoData[0].address || {};
-            const countryCode2 = (addr.country_code || 'tw').toUpperCase(); // 例如 JP / KR / US
+            const countryCode2 = (addr.country_code || 'tw').toUpperCase();
             setup.value.countryCode = countryCode2.toLowerCase();
 
-            // 2. 用 country code 去 restcountries 查貨幣資訊
             const rcRes = await fetch(
               `https://restcountries.com/v3.1/alpha/${countryCode2}`
             );
@@ -1937,7 +1945,7 @@
             let currencySymbol = 'NT$';
 
             if (countryInfo?.currencies) {
-              const [code, cur] = Object.entries(countryInfo.currencies)[0]; // 取第一個貨幣
+              const [code, cur] = Object.entries(countryInfo.currencies)[0];
               currencyCode = code || currencyCode;
               currencyName = cur?.name || currencyName;
               currencySymbol = cur?.symbol || currencySymbol;
@@ -1947,7 +1955,6 @@
             setup.value.currencyName = currencyName;
             setup.value.currencySymbol = currencySymbol;
 
-            // 3. 用貨幣代碼去 open.er-api 拉匯率（1 外幣 = 幾 TWD）
             const fxRes = await fetch(
               `https://open.er-api.com/v6/latest/${currencyCode}`
             );
@@ -1971,26 +1978,21 @@
           const list = days.value;
           if (!list.length || idx < 0 || idx >= list.length) return;
 
-          // 拿出目前這一天
           const day = { ...list[idx] };
 
           if (!day.flight) {
-            // 第一次按「新增當日航班資訊」→ 建立一個跟 v-model 對得上的物件
             day.flight = {
               startTime: '',
               endTime: '',
               startAirport: '',
               endAirport: '',
               number: '',
-              arrivalOffset: 0, // 0: 同日, 1: +1 天, -1: 前一天
+              arrivalOffset: 0,
             };
           } else {
-            // 已有航班時按 X → 刪除（你如果想只是「收合」可以改成其他 flag）
             if (!window.confirm('確定要刪除此日的航班資訊嗎？')) return;
             day.flight = null;
           }
-
-          // 用 splice 把這一天寫回去，確保 Vue 觸發更新
           list.splice(idx, 1, day);
         };
 
@@ -1998,6 +2000,48 @@
           if (type === 'food') return 'bg-amber-400';
           if (type === 'shop') return 'bg-emerald-400';
           return 'bg-teal-400';
+        };
+
+        // 根據同一天相鄰兩個行程，開啟 Google Maps 導航
+        const openGoogleRoute = (idx) => {
+          const items = currentDay.value.items || [];
+          if (idx <= 0 || idx >= items.length) {
+            alert('至少需要兩個連續的行程才能導航');
+            return;
+          }
+
+          const prev = items[idx - 1];
+          const cur  = items[idx];
+
+          if (!prev.location || !cur.location) {
+            alert('請先填寫兩個地點的名稱或地址');
+            return;
+          }
+
+          let mode = 'driving'; // 預設開車
+          switch (cur.transport) {
+            case '走路':
+              mode = 'walking';
+              break;
+            case '大眾運輸':
+              mode = 'transit';
+              break;
+            case '開車':
+            default:
+              mode = 'driving';
+              break;
+          }
+
+          const origin      = encodeURIComponent(prev.location);
+          const destination = encodeURIComponent(cur.location);
+
+          const url =
+            `https://www.google.com/maps/dir/?api=1` +
+            `&origin=${origin}` +
+            `&destination=${destination}` +
+            `&travelmode=${mode}`;
+
+          window.open(url, '_blank');
         };
 
         const addItem = () =>
@@ -2069,7 +2113,6 @@
         };
 
         /* ========== 編輯行程 Modal / 拖曳排序 ========== */
-
         const editModalVisible = ref(false);
         const editIndex = ref(null);
         const editForm = ref({
@@ -2136,7 +2179,6 @@
             (editForm.value.stayMinutes || 0);
           editModalVisible.value = false;
         };
-
 
         /* ========== Map / Geolocation ========== */
         const isMapLoading = ref(false);
@@ -2275,7 +2317,6 @@
             return;
           }
 
-          // 建立新旅程 ID，避免和現有 ID 衝突
           const id = Date.now().toString();
 
           const importedSetup = data.setup || {};
@@ -2292,10 +2333,8 @@
             startDate: importedSetup.startDate || '',
             endDate: importedSetup.endDate || '',
           };
-          // 強制使用新的 id
           tripMeta.id = id;
 
-          // 寫入狀態
           currentTripId.value = id;
           setup.value = {
             ...setup.value,
@@ -2309,10 +2348,8 @@
             exchangeRate.value = importedSetup.rate;
           }
 
-          // 加到旅程列表最前面
           tripList.value.unshift(tripMeta);
 
-          // 存到 localStorage
           saveJson('index', tripList.value);
           saveJson(`${id}_config`, setup.value);
           saveJson(`${id}_days`, days.value);
@@ -2323,7 +2360,6 @@
             exchangeRate.value.toString()
           );
 
-          // 更新天氣
           if (setup.value.destination) {
             fetchWeather(setup.value.destination);
           }
@@ -2375,8 +2411,9 @@
 
           currentDayIdx.value = 0;
           showSetupModal.value = false;
+          isEditingTrip.value = false;
+          editingTripId.value = null;
 
-          // ★ 新增：把 setup.rate 套用到記帳用的 exchangeRate
           if (!setup.value.rate || isNaN(setup.value.rate)) {
             setup.value.rate = 1;
           }
@@ -2408,6 +2445,9 @@
         };
 
         const createNewTrip = () => {
+          isEditingTrip.value = false;
+          editingTripId.value = null;
+
           setup.value = {
             destination: '',
             startDate: '',
@@ -2476,13 +2516,54 @@
 
           if (currentTripId.value === id) {
             if (tripList.value.length) {
-                switchTrip(tripList.value[0].id);
+              switchTrip(tripList.value[0].id);
             } else {
-                days.value = [];
-                currentTripId.value = null;
-                showSetupModal.value = true;
+              days.value = [];
+              currentTripId.value = null;
+              showSetupModal.value = true;
             }
-           }
+          }
+        };
+
+        const editTrip = (id) => {
+          if (currentTripId.value !== id) {
+            switchTrip(id);
+          }
+          isEditingTrip.value = true;
+          editingTripId.value = id;
+          showSetupModal.value = true;
+        };
+
+        const saveTripEdit = () => {
+          const id = editingTripId.value || currentTripId.value;
+          if (!id) {
+            showSetupModal.value = false;
+            isEditingTrip.value = false;
+            editingTripId.value = null;
+            return;
+          }
+
+          const trip = tripList.value.find(t => t.id === id);
+          if (trip) {
+            trip.startDate = setup.value.startDate;
+            trip.endDate   = setup.value.endDate;
+            if (!trip.name && setup.value.destination) {
+              trip.name = setup.value.destination;
+            }
+          }
+
+          saveJson('index', tripList.value);
+          saveJson(`${id}_config`, setup.value);
+
+          showSetupModal.value = false;
+          isEditingTrip.value  = false;
+          editingTripId.value  = null;
+        };
+
+        const cancelSetup = () => {
+          showSetupModal.value = false;
+          isEditingTrip.value  = false;
+          editingTripId.value  = null;
         };
 
         /* ========== 旅程日期顯示 ========== */
@@ -2501,8 +2582,6 @@
         );
 
         /* ========== Watchers ========== */
-
-        // 存每天行程 / 支出 / 匯率 / 成員
         watch(
           [days, expenses, exchangeRate, participants],
           () => {
@@ -2519,7 +2598,6 @@
           { deep: true }
         );
 
-        // 當你在「建立旅程」的匯率欄位修改 (setup.rate) 時，同步到記帳匯率
         watch(
           () => setup.value.rate,
           (val) => {
@@ -2530,7 +2608,6 @@
           }
         );
 
-        // 當你在「記帳」那邊直接改匯率 input (exchangeRate) 時，也回寫到 setup.rate
         watch(exchangeRate, (val) => {
           const n = parseFloat(val);
           if (!isNaN(n)) {
@@ -2538,24 +2615,23 @@
           }
         });
 
-        // 切到地圖或切換日子時，重新 initMap
         watch(viewMode, (v) => {
-            if (v === 'map') {
-                initMap();
-            } else if (v === 'plan') {
-                nextTick(() => initSortable());
-            }
+          if (v === 'map') {
+            initMap();
+          } else if (v === 'plan') {
+            nextTick(() => initSortable());
+          }
         });
 
         watch(currentDayIdx, () => {
-            if (viewMode.value === 'map') {
-                initMap();
-            } else if (viewMode.value === 'plan') {
-                nextTick(() => initSortable());
-            }
+          if (viewMode.value === 'map') {
+            initMap();
+          } else if (viewMode.value === 'plan') {
+            nextTick(() => initSortable());
+          }
         });
 
-        /* ========== onMounted：載入資料 / 設定線上狀態 ========== */
+        /* ========== onMounted ========== */
         onMounted(() => {
           isOnline.value = navigator.onLine;
           window.addEventListener(
@@ -2572,17 +2648,17 @@
             tripList.value = storedTrips;
           }
           if (tripList.value.length) {
-                switchTrip(tripList.value[0].id);
+            switchTrip(tripList.value[0].id);
           } else {
-                showSetupModal.value = true;
+            showSetupModal.value = true;
           }
 
-            if (viewMode.value === 'plan') {
-                nextTick(() => initSortable());
-            }
+          if (viewMode.value === 'plan') {
+            nextTick(() => initSortable());
+          }
         });
 
-        /* ========== 回傳給模板使用的狀態與方法 ========== */
+        /* ========== 回傳狀態 / 方法 ========== */
         return {
           // 主狀態
           viewMode,
@@ -2600,6 +2676,7 @@
           createNewTrip,
           switchTrip,
           deleteTrip,
+          editTrip,
           initTrip,
           tripDateRange,
           daysToTrip,
@@ -2614,14 +2691,14 @@
           updateDate,
           toggleFlightCard,
 
-            // 編輯 Modal
-            editModalVisible,
-            editIndex,
-            editForm,
-            estimatedLeaveTime,
-            openEditModal,
-            closeEditModal,
-            saveEdit,
+          // 編輯行程 Modal
+          editModalVisible,
+          editIndex,
+          editForm,
+          estimatedLeaveTime,
+          openEditModal,
+          closeEditModal,
+          saveEdit,
 
           // 分帳
           expenses,
@@ -2659,6 +2736,9 @@
           isRateLoading,
           setup,
           showSetupModal,
+          isEditingTrip,
+          saveTripEdit,
+          cancelSetup,
 
           // 地圖
           isMapLoading,
@@ -2682,6 +2762,7 @@
           closeImportModal,
           doImportTrip,
 
+          openGoogleRoute,
         };
       },
     }).mount('#app');
