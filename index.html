@@ -78,21 +78,35 @@
             font-size: 16px !important;
         }
 
-        /* === 全站字體在手機上整體放大一級 === */
-
         /* 基本字體稍微放大一點，整體比較好讀 */
         body {
-            font-size: 15px;
+            font-size: 15px !important;
         }
 
-        /* Tailwind 的字級往上一階調整 */
-        .text-xs   { font-size: 1rem;  }  /* 約 14.4px */
-        .text-sm   { font-size: 1.05rem;    }  /* 約 16px   */
-        .text-base { font-size: 1.1rem; }  /* 約 16.8px */
+        /* 把 Tailwind 的字級在手機上整體放大一階 */
+        .text-xs {
+            font-size: 0.9rem !important;      /* 約 14.4px */
+        }
 
-        .text-\[10px\] { font-size: 0.85rem; }  /* 約 13.6px */
-        .text-\[11px\] { font-size: 0.9rem;  }  /* 約 14.4px */
+        .text-sm {
+            font-size: 1rem !important;        /* 約 16px */
+        }
+
+        .text-base {
+            font-size: 1.05rem !important;     /* 約 16.8px */
+        }
+
+        /* 你常用的超小字：text-[10px] / text-[11px] 通通拉上來 */
+        .text-\[10px\] {
+            font-size: 0.85rem !important;     /* 約 13.6px */
+        }
+
+        .text-\[11px\] {
+            font-size: 0.9rem !important;      /* 約 14.4px */
+        }
     }
+
+
   </style>
 </head>
 <body class="bg-slate-950 text-slate-50">
