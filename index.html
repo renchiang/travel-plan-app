@@ -69,6 +69,30 @@
       height: calc(100vh - 110px); /* 扣掉 header + bottom nav */
       min-height: 420px;
     }
+
+    /* 防止 iPhone 輸入時畫面自動放大：小螢幕時，表單字體一律 >= 16px */
+    @media (max-width: 640px) {
+        input,
+        textarea,
+        select {
+            font-size: 16px !important;
+        }
+
+        /* === 全站字體在手機上整體放大一級 === */
+
+        /* 基本字體稍微放大一點，整體比較好讀 */
+        body {
+            font-size: 15px;
+        }
+
+        /* Tailwind 的字級往上一階調整 */
+        .text-xs   { font-size: 1rem;  }  /* 約 14.4px */
+        .text-sm   { font-size: 1.05rem;    }  /* 約 16px   */
+        .text-base { font-size: 1.1rem; }  /* 約 16.8px */
+
+        .text-\[10px\] { font-size: 0.85rem; }  /* 約 13.6px */
+        .text-\[11px\] { font-size: 0.9rem;  }  /* 約 14.4px */
+    }
   </style>
 </head>
 <body class="bg-slate-950 text-slate-50">
@@ -446,9 +470,9 @@
           <div class="space-y-4 mt-4">
             <!-- 上方：操作列 -->
             <div class="flex items-center justify-between gap-2 mb-1">
-              <div class="text-xs text-slate-400">
+              <!-- <div class="text-xs text-slate-400">
                 拖曳卡片可調整順序，點一下可編輯詳細內容
-              </div>
+              </div> -->
               <div class="flex items-center gap-2">
                 <button
                   @click="addItem"
@@ -502,7 +526,7 @@
                   <!-- 中：標題 + 地點 -->
                   <div class="flex-1 min-w-0">
                     <div class="flex items-center gap-2">
-                      <p class="text-sm font-semibold text-slate-50 truncate">
+                      <p class="text-base font-semibold text-slate-50 truncate">
                         {{ item.activity || '行程內容' }}
                       </p>
                       <span
