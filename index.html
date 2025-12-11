@@ -538,6 +538,17 @@
                         placeholder="例如：雙人房、不含早餐、Agoda 訂單號、可提早寄放行李等"
                       ></textarea>
                     </div>
+
+                    <!-- 導航到住宿按鈕 -->
+                    <div class="mt-3 flex justify-end">
+                      <button
+                        @click="openStayInGoogleMaps"
+                        class="inline-flex items-center gap-1 text-[11px] text-sky-600 hover:text-sky-500 underline"
+                      >
+                        <i class="ph-bold ph-navigation-arrow text-xs"></i>
+                        用 Google Maps 導航到住宿
+                      </button>
+                    </div>
                   </div>
 
                   <!-- 沒有住宿時顯示「新增住宿」 -->
@@ -2132,6 +2143,42 @@
           window.open(url, '_blank');
         };
 
+        // 導航到住宿
+        const openStayInGoogleMaps = () => {
+          const day = currentDay.value;
+          if (!day || !day.stay) {
+            alert('尚未填寫住宿資訊');
+            return;
+          }
+          const destRaw = day.stay.address || day.stay.name;
+          if (!destRaw) {
+            alert('請先輸入住宿名稱或地址');
+            return;
+          }
+          const destination = encodeURIComponent(destRaw.trim());
+
+          // 找「這一天」最後一個有地點的行程，當作出發點
+          const lastWithLoc = (day.items || [])
+            .slice()
+            .reverse()
+            .find(i => i.location && i.location.trim());
+
+          let url;
+          if (lastWithLoc) {
+            const origin = encodeURIComponent(lastWithLoc.location.trim());
+            url =
+              `https://www.google.com/maps/dir/?api=1` +
+              `&origin=${origin}` +
+              `&destination=${destination}` +
+              `&travelmode=walking`;
+          } else {
+            // 如果沒有行程地點，就用搜尋住宿
+            url =
+              `https://www.google.com/maps/search/?api=1&query=${destination}`;
+          }
+          window.open(url, '_blank');
+        };
+
         const addItem = () =>
           currentDay.value.items.push({
             time: '',
@@ -2846,6 +2893,7 @@
           doImportTrip,
 
           openGoogleRoute,
+          openStayInGoogleMaps,
         };
       },
     }).mount('#app');
