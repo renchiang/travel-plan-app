@@ -96,31 +96,28 @@
         font-size: 16px !important;
       }
 
-      /* 基本字體稍微放大一點，整體比較好讀 */
       body {
         font-size: 15px !important;
       }
 
-      /* 把 Tailwind 的字級在手機上整體放大一階 */
       .text-xs {
-        font-size: 0.9rem !important;      /* 約 14.4px */
+        font-size: 0.9rem !important;
       }
 
       .text-sm {
-        font-size: 1rem !important;        /* 約 16px */
+        font-size: 1rem !important;
       }
 
       .text-base {
-        font-size: 1.05rem !important;     /* 約 16.8px */
+        font-size: 1.05rem !important;
       }
 
-      /* 你常用的超小字：text-[10px] / text-[11px] 通通拉上來 */
       .text-\[10px\] {
-        font-size: 0.85rem !important;     /* 約 13.6px */
+        font-size: 0.85rem !important;
       }
 
       .text-\[11px\] {
-        font-size: 0.9rem !important;      /* 約 14.4px */
+        font-size: 0.9rem !important;
       }
     }
   </style>
@@ -143,12 +140,11 @@
 
           <div>
             <div class="flex items-center gap-2">
-              <!-- 用 currentTitle 顯示：旅程名稱 > 目的地 > 預設文字 -->
               <h1 class="text-2xl font-extrabold tracking-tight leading-tight">
                 {{ currentTitle }}
               </h1>
 
-              <!-- 天氣搬到這裡：行程名稱後面的小徽章 -->
+              <!-- 天氣徽章 -->
               <div
                 v-if="weather.temp !== null"
                 class="flex items-center gap-1 rounded-full bg-sky-50 border border-sky-200 px-2 py-0.5 text-[11px] text-slate-600"
@@ -193,15 +189,13 @@
         </div>
       </div>
 
-      <!-- Trip Drawer：點左上三條線打開 -->
+      <!-- Trip Drawer -->
       <transition name="fade">
         <div
           v-if="showTripMenu"
           class="fixed inset-0 z-40 flex bg-slate-950/80"
         >
-          <!-- 左邊側邊欄 -->
           <div class="w-80 max-w-xs sm:max-w-sm h-full bg-white border-r border-slate-200 shadow-2xl flex flex-col">
-            <!-- 標題列 -->
             <div class="px-4 py-3 border-b border-slate-800 flex items-center justify-between">
               <div class="flex items-center gap-2">
                 <span class="inline-flex items-center justify-center w-8 h-8 rounded-2xl bg-teal-500/10 border border-teal-400/40">
@@ -222,7 +216,6 @@
               </button>
             </div>
 
-            <!-- 上方操作：匯入 + 新增 -->
             <div class="px-4 py-3 border-b border-slate-100 flex items-center justify-between bg-slate-50">
               <button
                 @click="openImportModal"
@@ -240,7 +233,6 @@
               </button>
             </div>
 
-            <!-- 旅程列表 -->
             <div class="flex-1 overflow-y-auto hide-scroll px-4 py-2 space-y-2">
               <div
                 v-if="!tripList.length"
@@ -270,8 +262,6 @@
                       <span v-else>未設定日期</span>
                     </p>
                   </div>
-
-                  <!-- 右邊：編輯 + 刪除 -->
                   <div class="flex items-center gap-1">
                     <button
                       @click.stop="editTrip(trip.id)"
@@ -293,7 +283,6 @@
             </div>
           </div>
 
-          <!-- 右側透明區：點一下關閉 Drawer -->
           <button
             class="flex-1 h-full"
             @click="showTripMenu = false"
@@ -334,7 +323,6 @@
       <!-- 行程表 (Plan View) -->
       <transition name="fade" mode="out-in">
         <div v-if="viewMode === 'plan'" :key="currentDayIdx" class="p-4 space-y-6">
-
           <!-- 天氣預報 -->
           <div v-if="weatherDisplay" class="bg-white rounded-2xl p-3 border border-slate-200">
             <div class="flex items-center justify-between mb-2">
@@ -365,216 +353,322 @@
             </div>
           </div>
 
-          <!-- 航班卡片 (登機證樣式) -->
+          <!-- 當日交通 / 住宿（可摺疊區塊） -->
           <div class="mb-6">
-            <div
-              v-if="currentDay.flight"
-              class="relative bg-gradient-to-r from-blue-600 to-teal-500 rounded-2xl text-white shadow-lg overflow-hidden"
-            >
-              <div class="absolute -left-3 top-1/2 -translate-y-1/2 w-6 h-6 bg-slate-50 rounded-full z-10"></div>
-              <div class="absolute -right-3 top-1/2 -translate-y-1/2 w-6 h-6 bg-slate-50 rounded-full z-10"></div>
-              <div class="p-4 relative z-0">
-                <!-- 這顆 X = 刪掉當日航班 -->
-                <button
-                  @click="toggleFlightCard"
-                  class="absolute top-2 right-2 text-white/50 hover:text-white hover:bg-white/20 rounded-full p-1 transition"
-                >
-                  <i class="ph-bold ph-x"></i>
-                </button>
+            <!-- 區塊標題 + 摺疊按鈕 -->
+            <div class="flex items-center justify-between mb-2">
+              <div class="flex items-center gap-2">
+                <span class="inline-flex items-center justify-center w-8 h-8 rounded-2xl bg-sky-50 border border-sky-200">
+                  <i class="ph-bold ph-airplane-tilt text-sky-500 text-lg"></i>
+                </span>
+                <div class="flex flex-col">
+                  <span class="text-sm font-semibold text-slate-900">
+                    當日交通 / 住宿
+                  </span>
+                  <span class="text-[10px] text-slate-500">
+                    可設定機票與住宿資訊，收合後只留標題。
+                  </span>
+                </div>
+              </div>
+              <button
+                @click="toggleTravelPanel"
+                class="inline-flex items-center gap-1 text-[11px] px-2 py-1 rounded-full border border-slate-300 text-slate-600 hover:bg-slate-100"
+              >
+                <span>{{ isTravelPanelOpen ? '收合' : '展開' }}</span>
+                <i
+                  :class="isTravelPanelOpen ? 'ph-bold ph-caret-up' : 'ph-bold ph-caret-down'"
+                  class="text-xs"
+                ></i>
+              </button>
+            </div>
 
-                <div class="flex justify-between items-center mb-1 pt-2">
-                  <!-- 出發 -->
-                  <div class="flex flex-col items-center w-1/3">
-                    <input
-                      v-model="currentDay.flight.startTime"
-                      type="time"
-                      class="text-2xl font-black bg-transparent border-b border-white/30 w-full text-center text-white placeholder-white/50 focus:outline-none focus:border-white font-mono p-0"
-                    >
-                    <div class="text-[9px] opacity-60 mt-1">起飛 (當地時間)</div>
-                    <input
-                      v-model="currentDay.flight.startAirport"
-                      class="text-sm font-bold opacity-90 bg-transparent border-none text-center w-full text-teal-100 placeholder-white/50 focus:ring-0 uppercase p-0"
-                      placeholder="TPE"
-                    >
-                  </div>
-
-                  <!-- 中間資訊 -->
-                  <div class="flex flex-col items-center justify-center w-1/3 px-2">
-                    <i class="ph-fill ph-airplane text-2xl mb-1 transform rotate-90"></i>
-                    <input
-                      v-model="currentDay.flight.number"
-                      class="text-[10px] font-mono tracking-widest opacity-80 bg-transparent border-none text-center w-full text-white placeholder-white/50 focus:ring-0 uppercase p-0"
-                      placeholder="BR198"
-                    >
-                    <div class="w-full h-0.5 bg-white/30 rounded-full mt-1"></div>
-                  </div>
-
-                  <!-- 抵達 -->
-                  <div class="flex flex-col items-center w-1/3">
-                    <input
-                      v-model="currentDay.flight.endTime"
-                      type="time"
-                      class="text-2xl font-black bg-transparent border-b border-white/30 w-full text-center text-white placeholder-white/50 focus:outline-none focus:border-white font-mono p-0"
-                    >
-                    <div class="relative w-full mt-0.5">
-                      <select
-                        v-model="currentDay.flight.arrivalOffset"
-                        class="appearance-none bg-black/20 text-white text-[9px] rounded border-none w-full py-0.5 px-1 text-center focus:ring-0 cursor-pointer hover:bg-black/30"
+            <!-- 內容：可摺疊 -->
+            <transition name="fade">
+              <div v-if="isTravelPanelOpen" class="space-y-3">
+                <!-- 航班卡片 (登機證樣式) -->
+                <div>
+                  <div
+                    v-if="currentDay.flight"
+                    class="relative bg-gradient-to-r from-blue-600 to-teal-500 rounded-2xl text-white shadow-lg overflow-hidden"
+                  >
+                    <div class="absolute -left-3 top-1/2 -translate-y-1/2 w-6 h-6 bg-slate-50 rounded-full z-10"></div>
+                    <div class="absolute -right-3 top-1/2 -translate-y-1/2 w-6 h-6 bg-slate-50 rounded-full z-10"></div>
+                    <div class="p-4 relative z-0">
+                      <button
+                        @click="toggleFlightCard"
+                        class="absolute top-2 right-2 text-white/50 hover:text-white hover:bg-white/20 rounded-full p-1 transition"
                       >
-                        <option value="0" class="text-slate-800">同日抵達</option>
-                        <option value="1" class="text-slate-800">+1天 (隔日)</option>
-                        <option value="-1" class="text-slate-800">-1天 (前日)</option>
-                      </select>
-                      <div
-                        v-if="currentDay.flight.arrivalOffset != 0"
-                        class="absolute -top-8 right-0 bg-red-500 text-white text-[9px] px-1.5 py-0.5 rounded shadow font-bold animate-pulse"
-                      >
-                        {{ currentDay.flight.arrivalOffset > 0 ? '+1' : '-1' }}
+                        <i class="ph-bold ph-x"></i>
+                      </button>
+
+                      <div class="flex justify-between items-center mb-1 pt-2">
+                        <!-- 出發 -->
+                        <div class="flex flex-col items-center w-1/3">
+                          <input
+                            v-model="currentDay.flight.startTime"
+                            type="time"
+                            class="text-2xl font-black bg-transparent border-b border-white/30 w-full text-center text-white placeholder-white/50 focus:outline-none focus:border-white font-mono p-0"
+                          >
+                          <div class="text-[9px] opacity-60 mt-1">起飛 (當地時間)</div>
+                          <input
+                            v-model="currentDay.flight.startAirport"
+                            class="text-sm font-bold opacity-90 bg-transparent border-none text-center w-full text-teal-100 placeholder-white/50 focus:ring-0 uppercase p-0"
+                            placeholder="TPE"
+                          >
+                        </div>
+
+                        <!-- 中間資訊 -->
+                        <div class="flex flex-col items-center justify-center w-1/3 px-2">
+                          <i class="ph-fill ph-airplane text-2xl mb-1 transform rotate-90"></i>
+                          <input
+                            v-model="currentDay.flight.number"
+                            class="text-[10px] font-mono tracking-widest opacity-80 bg-transparent border-none text-center w-full text-white placeholder-white/50 focus:ring-0 uppercase p-0"
+                            placeholder="BR198"
+                          >
+                          <div class="w-full h-0.5 bg-white/30 rounded-full mt-1"></div>
+                        </div>
+
+                        <!-- 抵達 -->
+                        <div class="flex flex-col items-center w-1/3">
+                          <input
+                            v-model="currentDay.flight.endTime"
+                            type="time"
+                            class="text-2xl font-black bg-transparent border-b border-white/30 w-full text-center text-white placeholder-white/50 focus:outline-none focus:border-white font-mono p-0"
+                          >
+                          <div class="relative w-full mt-0.5">
+                            <select
+                              v-model="currentDay.flight.arrivalOffset"
+                              class="appearance-none bg-black/20 text-white text-[9px] rounded border-none w-full py-0.5 px-1 text-center focus:ring-0 cursor-pointer hover:bg-black/30"
+                            >
+                              <option value="0" class="text-slate-800">同日抵達</option>
+                              <option value="1" class="text-slate-800">+1天 (隔日)</option>
+                              <option value="-1" class="text-slate-800">-1天 (前日)</option>
+                            </select>
+                            <div
+                              v-if="currentDay.flight.arrivalOffset != 0"
+                              class="absolute -top-8 right-0 bg-red-500 text-white text-[9px] px-1.5 py-0.5 rounded shadow font-bold animate-pulse"
+                            >
+                              {{ currentDay.flight.arrivalOffset > 0 ? '+1' : '-1' }}
+                            </div>
+                          </div>
+                          <input
+                            v-model="currentDay.flight.endAirport"
+                            class="text-sm font-bold opacity-90 bg-transparent border-none text-center w-full text-teal-100 placeholder-white/50 focus:ring-0 uppercase p-0"
+                            placeholder="NRT"
+                          >
+                        </div>
                       </div>
                     </div>
-                    <input
-                      v-model="currentDay.flight.endAirport"
-                      class="text-sm font-bold opacity-90 bg-transparent border-none text-center w-full text-teal-100 placeholder-white/50 focus:ring-0 uppercase p-0"
-                      placeholder="NRT"
+                  </div>
+
+                  <!-- 沒有 flight 時顯示「新增」 -->
+                  <button
+                    v-else
+                    @click="toggleFlightCard"
+                    class="w-full mt-1 py-3 border-2 border-dashed border-slate-300 rounded-2xl text-slate-400 hover:border-teal-400 hover:text-teal-500 hover:bg-teal-50/50 transition flex items-center justify-center gap-2 group"
+                  >
+                    <i class="ph-bold ph-airplane-tilt text-lg group-hover:scale-110 transition-transform"></i>
+                    <span class="text-sm font-bold">新增當日航班資訊</span>
+                  </button>
+                </div>
+
+                <!-- 住宿卡片 -->
+                <div>
+                  <div
+                    v-if="currentDay.stay"
+                    class="bg-white rounded-2xl border border-amber-200 shadow-sm px-3 py-3"
+                  >
+                    <div class="flex items-start justify-between gap-2 mb-2">
+                      <div class="flex items-start gap-2">
+                        <div class="inline-flex items-center justify-center w-8 h-8 rounded-2xl bg-amber-50 border border-amber-200">
+                          <i class="ph-bold ph-bed text-amber-500 text-lg"></i>
+                        </div>
+                        <div class="flex flex-col gap-1">
+                          <input
+                            v-model="currentDay.stay.name"
+                            class="bg-transparent border-none text-sm font-semibold text-slate-900 focus:outline-none focus:ring-0"
+                            placeholder="住宿名稱，例如：OOO 飯店"
+                          />
+                          <input
+                            v-model="currentDay.stay.address"
+                            class="bg-transparent border-none text-[11px] text-slate-500 focus:outline-none focus:ring-0"
+                            placeholder="地址或大致區域，例如：新宿區、上野站附近"
+                          />
+                        </div>
+                      </div>
+                      <button
+                        @click="toggleStayCard"
+                        class="text-slate-400 hover:text-rose-500"
+                      >
+                        <i class="ph-bold ph-x text-sm"></i>
+                      </button>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-2 mb-2">
+                      <div>
+                        <label class="block text-[10px] text-slate-500 mb-0.5">
+                          Check-in 時間
+                        </label>
+                        <input
+                          v-model="currentDay.stay.checkInTime"
+                          type="time"
+                          class="w-full text-xs rounded-xl bg-slate-50 border border-slate-300 px-2 py-1 text-slate-900 focus:outline-none focus:ring-1 focus:ring-amber-300"
+                        />
+                      </div>
+                      <div>
+                        <label class="block text-[10px] text-slate-500 mb-0.5">
+                          Check-out 時間
+                        </label>
+                        <input
+                          v-model="currentDay.stay.checkOutTime"
+                          type="time"
+                          class="w-full text-xs rounded-xl bg-slate-50 border border-slate-300 px-2 py-1 text-slate-900 focus:outline-none focus:ring-1 focus:ring-amber-300"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label class="block text-[10px] text-slate-500 mb-0.5">
+                        備註 / 房型 / 訂單資訊
+                      </label>
+                      <textarea
+                        v-model="currentDay.stay.note"
+                        rows="2"
+                        class="w-full text-[11px] rounded-xl bg-slate-50 border border-slate-300 px-2 py-1 text-slate-900 focus:outline-none focus:ring-1 focus:ring-amber-300"
+                        placeholder="例如：雙人房、不含早餐、Agoda 訂單號、可提早寄放行李等"
+                      ></textarea>
+                    </div>
+                  </div>
+
+                  <!-- 沒有住宿時顯示「新增住宿」 -->
+                  <button
+                    v-else
+                    @click="toggleStayCard"
+                    class="w-full mt-1 py-3 border-2 border-dashed border-slate-300 rounded-2xl text-slate-400 hover:border-amber-400 hover:text-amber-500 hover:bg-amber-50/50 transition flex items-center justify-center gap-2 group"
+                  >
+                    <i class="ph-bold ph-bed text-lg group-hover:scale-110 transition-transform"></i>
+                    <span class="text-sm font-bold">新增住宿資訊</span>
+                  </button>
+                </div>
+              </div>
+            </transition>
+          </div>
+
+          <!-- 行程 Timeline -->
+          <div class="space-y-4 mt-4">
+            <div
+              class="relative pl-4 border-l border-teal-300 space-y-3"
+              ref="timelineRef"
+            >
+              <div
+                v-for="(item, idx) in currentDay.items"
+                :key="idx"
+                class="relative group"
+              >
+                <div
+                  class="absolute -left-[21px] top-1/2 -translate-y-1/2 w-3 h-3 rounded-full border-2 border-slate-900 shadow-sm"
+                  :class="getDotColor(item.type)"
+                ></div>
+
+                <div
+                  class="bg-white hover:bg-teal-50 rounded-2xl border border-slate-200 hover:border-teal-400/70 shadow-sm hover:shadow-lg transition flex items-center gap-3 px-3 py-2 cursor-pointer"
+                  @click="openEditModal(idx)"
+                >
+                  <div class="flex flex-col items-center justify-center w-[3.5rem]">
+                    <div class="text-[10px] text-slate-400 mb-0.5">
+                      {{ getTimePeriod(item.time) }}
+                    </div>
+                    <div class="text-lg font-mono font-semibold text-slate-900">
+                      {{ item.time || '--:--' }}
+                    </div>
+                  </div>
+
+                  <div class="flex-1 min-w-0">
+                    <div class="flex items-center gap-2">
+                      <p
+                        class="text-base font-semibold truncate"
+                        :class="item.activity ? 'text-slate-900' : 'text-slate-400 italic'"
+                      >
+                        {{ item.activity || '行程內容' }}
+                      </p>
+                      <span
+                        v-if="item.transport"
+                        class="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-full bg-slate-900/70 text-slate-300 border border-slate-600"
+                      >
+                        <i class="ph-bold ph-route text-[11px]"></i>
+                        {{ item.transport }}
+                      </span>
+                    </div>
+
+                    <p
+                      v-if="item.location"
+                      class="text-[11px] text-slate-300 mt-0.5 truncate"
                     >
+                      {{ item.location }}
+                    </p>
+                    <p
+                      v-if="item.note"
+                      class="text-[11px] text-slate-400 mt-0.5 overflow-hidden text-ellipsis whitespace-nowrap"
+                    >
+                      {{ item.note }}
+                    </p>
+
+                    <button
+                      v-if="
+                        idx > 0 &&
+                        item.location &&
+                        currentDay.items[idx - 1] &&
+                        currentDay.items[idx - 1].location
+                      "
+                      @click.stop="openGoogleRoute(idx)"
+                      class="mt-1 inline-flex items-center gap-1 text-[10px] text-sky-600 hover:text-sky-500 underline"
+                    >
+                      <i class="ph-bold ph-navigation-arrow text-[11px]"></i>
+                      用 Google Maps 導航
+                    </button>
+                  </div>
+
+                  <div class="flex flex-col items-end gap-1">
+                    <div
+                      class="p-1 rounded-full hover:bg-slate-700 cursor-grab drag-handle"
+                      title="拖曳調整順序"
+                    >
+                      <i class="ph-bold ph-dots-six-vertical text-xs"></i>
+                    </div>
+
+                    <button
+                      class="p-1 rounded-full hover:bg-slate-700"
+                      @click.stop="openEditModal(idx)"
+                      title="編輯"
+                    >
+                      <i class="ph-bold ph-note-pencil text-xs"></i>
+                    </button>
+                    <button
+                      class="p-1 rounded-full hover:bg-slate-700"
+                      @click.stop="removeItem(idx)"
+                      title="刪除"
+                    >
+                      <i class="ph-bold ph-trash text-xs text-rose-400"></i>
+                    </button>
                   </div>
                 </div>
+              </div>
+
+              <div
+                v-if="currentDay.items.length === 0"
+                class="text-xs text-slate-400 text-center py-4"
+              >
+                還沒有行程，先按下方「新增行程」開始安排吧！
               </div>
             </div>
 
-            <!-- 沒有 flight 時顯示「新增」 -->
-            <button
-              v-else
-              @click="toggleFlightCard"
-              class="w-full py-3 border-2 border-dashed border-slate-300 rounded-2xl text-slate-400 hover:border-teal-400 hover:text-teal-500 hover:bg-teal-50/50 transition flex items-center justify-center gap-2 group"
-            >
-              <i class="ph-bold ph-airplane-tilt text-lg group-hover:scale-110 transition-transform"></i>
-              <span class="text-sm font-bold">新增當日航班資訊</span>
-            </button>
-          </div>
-
-          <!-- 行程 Timeline（拖曳排序 + Modal 編輯） -->
-          <div class="space-y-4 mt-4">
-            <!-- Timeline 主體 -->
-            <div class="relative pl-4 border-l border-teal-300">
-              <!-- 可拖曳區：只包行程卡片 -->
-              <div class="space-y-3" ref="timelineRef">
-                <div
-                  v-for="(item, idx) in currentDay.items"
-                  :key="idx"
-                  class="relative group sortable-item"
-                >
-                  <!-- 節點 -->
-                  <div
-                    class="absolute -left-[21px] top-1/2 -translate-y-1/2 w-3 h-3 rounded-full border-2 border-slate-900 shadow-sm"
-                    :class="getDotColor(item.type)"
-                  ></div>
-
-                  <!-- 行程卡片 -->
-                  <div
-                    class="bg-white hover:bg-teal-50 rounded-2xl border border-slate-200 hover:border-teal-400/70 shadow-sm hover:shadow-lg transition flex items-center gap-3 px-3 py-2 cursor-pointer"
-                    @click="openEditModal(idx)"
-                  >
-                    <!-- 左：時間 -->
-                    <div class="flex flex-col items-center justify-center w-[3.5rem]">
-                      <div class="text-[10px] text-slate-400 mb-0.5">
-                        {{ getTimePeriod(item.time) }}
-                      </div>
-                      <div class="text-lg font-mono font-semibold text-slate-900">
-                        {{ item.time || '--:--' }}
-                      </div>
-                    </div>
-
-                    <!-- 中：標題 + 地點 -->
-                    <div class="flex-1 min-w-0">
-                      <div class="flex items-center gap-2">
-                        <p
-                          class="text-base font-semibold truncate"
-                          :class="item.activity ? 'text-slate-900' : 'text-slate-400 italic'"
-                        >
-                          {{ item.activity || '行程內容' }}
-                        </p>
-                        <span
-                          v-if="item.transport"
-                          class="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-full bg-slate-900/70 text-slate-300 border border-slate-600"
-                        >
-                          <i class="ph-bold ph-route text-[11px]"></i>
-                          {{ item.transport }}
-                        </span>
-                      </div>
-
-                      <p
-                        v-if="item.location"
-                        class="text-[11px] text-slate-300 mt-0.5 truncate"
-                      >
-                        {{ item.location }}
-                      </p>
-                      <p
-                        v-if="item.note"
-                        class="text-[11px] text-slate-400 mt-0.5 overflow-hidden text-ellipsis whitespace-nowrap"
-                      >
-                        {{ item.note }}
-                      </p>
-
-                      <!-- 用 Google Maps 導航 -->
-                      <button
-                        v-if="
-                          idx > 0 &&
-                          item.location &&
-                          currentDay.items[idx - 1] &&
-                          currentDay.items[idx - 1].location
-                        "
-                        @click.stop="openGoogleRoute(idx)"
-                        class="mt-1 inline-flex items-center gap-1 text-[10px] text-sky-600 hover:text-sky-500 underline"
-                      >
-                        <i class="ph-bold ph-navigation-arrow text-[11px]"></i>
-                        用 Google Maps 導航
-                      </button>
-                    </div>
-
-                    <!-- 右：操作 -->
-                    <div class="flex flex-col items-end gap-1">
-                      <!-- 拖曳把手 -->
-                      <div
-                        class="p-1 rounded-full hover:bg-slate-700 cursor-grab drag-handle"
-                        title="拖曳調整順序"
-                      >
-                        <i class="ph-bold ph-dots-six-vertical text-xs"></i>
-                      </div>
-
-                      <button
-                        class="p-1 rounded-full hover:bg-slate-700"
-                        @click.stop="openEditModal(idx)"
-                        title="編輯"
-                      >
-                        <i class="ph-bold ph-note-pencil text-xs"></i>
-                      </button>
-                      <button
-                        class="p-1 rounded-full hover:bg-slate-700"
-                        @click.stop="removeItem(idx)"
-                        title="刪除"
-                      >
-                        <i class="ph-bold ph-trash text-xs text-rose-400"></i>
-                      </button>
-                    </div>
-                  </div>
-                </div>
-
-                <!-- 沒有行程時的提示 -->
-                <div
-                  v-if="currentDay.items.length === 0"
-                  class="text-xs text-slate-400 text-center py-4"
-                >
-                  還沒有行程，先按下方「新增行程」開始安排吧！
-                </div>
-              </div>
-
-              <!-- 新增行程：在 timeline 最下方 -->
-              <div class="mt-3 relative">
-                <!-- 左邊小圓點 -->
+            <!-- 新增行程 -->
+            <div class="pl-4">
+              <div class="relative group inline-flex items-center">
                 <div
                   class="absolute -left-[21px] top-1/2 -translate-y-1/2 w-3 h-3 rounded-full bg-teal-300 shadow-sm"
                 ></div>
+
                 <button
                   @click="addItem"
                   class="inline-flex items-center gap-1 text-xs text-teal-400 hover:text-teal-300"
@@ -585,7 +679,7 @@
               </div>
             </div>
 
-            <!-- 下方：橫線 + 刪除這一天 -->
+            <!-- 刪除這一天 -->
             <div class="pt-4">
               <div class="border-t border-slate-200 mb-3"></div>
               <div class="flex justify-center">
@@ -599,7 +693,7 @@
               </div>
             </div>
           </div>
-        </div> 
+        </div>
       </transition>
 
       <!-- 編輯行程 Modal -->
@@ -838,15 +932,12 @@
             </p>
           </div>
 
-          <!-- 垂直排版，手機友善 -->
           <div class="mb-2 space-y-2">
-            <!-- 消費項目：整行 -->
             <input
               v-model="newExpense.item"
               class="w-full text-xs rounded-xl bg-slate-50 border border-slate-300 text-slate-900 px-2 py-1 focus:outline-none focus:ring-1 focus:ring-teal-400"
               placeholder="消費項目，例如：午餐、車票..."
             />
-            <!-- 金額 + 付款人：並排兩欄 -->
             <div class="flex gap-2">
               <input
                 v-model.number="newExpense.amount"
@@ -864,7 +955,6 @@
                 </option>
               </select>
             </div>
-            <!-- 新增按鈕：手機用滿版 -->
             <button
               @click="addExpense"
               class="w-full px-2 py-2 rounded-xl bg-teal-500 text-slate-950 text-xs font-semibold hover:bg-teal-400"
@@ -873,7 +963,6 @@
             </button>
           </div>
 
-          <!-- 支出列表 -->
           <div class="space-y-1 max-h-44 overflow-y-auto hide-scroll">
             <div
               v-for="(e, idx) in expenses"
@@ -944,29 +1033,19 @@
 
       <!-- 清單視圖 -->
       <div v-if="viewMode === 'checklist'" class="p-4 space-y-3">
-        <!-- 上方標題＋新增清單 -->
         <div class="flex items-center justify-between mb-1">
           <div class="text-xs font-semibold text-slate-700 flex items-center gap-1">
             <i class="ph-bold ph-clipboard-text text-emerald-500"></i>
             <span>行前清單</span>
           </div>
-          <button
-            @click="addChecklistSection"
-            class="text-[11px] px-2 py-1 rounded-full border border-slate-600 text-slate-300 hover:border-teal-400 hover:text-teal-200 flex items-center gap-1"
-          >
-            <i class="ph-bold ph-folder-plus text-xs"></i>
-            新增清單
-          </button>
         </div>
 
-        <!-- 各個清單區塊 -->
         <div class="space-y-3">
           <div
             v-for="section in checklistSections"
             :key="section.id"
             class="bg-white rounded-2xl border border-slate-200 overflow-hidden"
           >
-            <!-- 清單標題列 -->
             <div
               :class="[
                 'px-3 py-2.5 flex items-center justify-between border-b border-slate-200',
@@ -975,7 +1054,6 @@
             >
               <div class="flex items-center gap-2">
                 <div>
-                  <!-- 標題可直接編輯 -->
                   <input
                     v-model="section.title"
                     class="bg-transparent border-none text-xs font-semibold text-slate-950/90 focus:outline-none focus:ring-0"
@@ -997,8 +1075,6 @@
                 <span class="text-[10px] font-semibold">
                   {{ sectionProgress(section) }}%
                 </span>
-
-                <!-- 刪除整個清單 -->
                 <button
                   @click.stop="removeChecklistSection(section.id)"
                   class="ml-1 text-slate-900/70 hover:text-rose-700 flex items-center gap-1 text-[10px]"
@@ -1009,7 +1085,6 @@
               </div>
             </div>
 
-            <!-- 清單項目 -->
             <div class="p-2">
               <div class="space-y-1 max-h-40 overflow-y-auto hide-scroll">
                 <label
@@ -1054,6 +1129,15 @@
             </div>
           </div>
         </div>
+
+        <!-- 新增清單：最下面 -->
+        <button
+          @click="addChecklistSection"
+          class="w-full text-[11px] mt-1 px-2 py-2 rounded-xl border border-slate-600 text-slate-300 hover:border-teal-400 hover:text-teal-200 flex items-center justify-center gap-1"
+        >
+          <i class="ph-bold ph-folder-plus text-xs"></i>
+          新增清單
+        </button>
       </div>
     </main>
 
@@ -1122,7 +1206,6 @@
             </button>
           </div>
 
-          <!-- 文字摘要 -->
           <div class="mb-2 p-2 rounded-xl bg-slate-50 border border-slate-200">
             <p class="text-[10px] text-slate-500 mb-1">文字摘要</p>
             <p class="text-[11px] text-slate-800 whitespace-pre-line">
@@ -1130,7 +1213,6 @@
             </p>
           </div>
 
-          <!-- JSON 區塊 -->
           <label class="block text-[10px] text-slate-500 mb-1">
             完整 JSON（可備份 / 匯入）
           </label>
@@ -1215,7 +1297,7 @@
       </div>
     </transition>
 
-    <!-- Setup Modal（新建 / 編輯共用） -->
+    <!-- Setup Modal -->
     <transition name="fade">
       <div
         v-if="showSetupModal"
@@ -1339,7 +1421,6 @@
       nextTick,
     } from 'https://unpkg.com/vue@3/dist/vue.esm-browser.prod.js';
 
-    /* ----------------- 小工具：localStorage helpers ----------------- */
     const STORAGE_PREFIX = 'travel_app_';
 
     const saveJson = (key, value) =>
@@ -1355,7 +1436,6 @@
       }
     };
 
-    /* ----------------- 小工具：日期 & 旅程字串 ----------------- */
     const formatTripRange = (startDate, endDate) => {
       if (!startDate || !endDate) return '';
       const start = new Date(startDate);
@@ -1374,7 +1454,6 @@
       return `${diff} 天 ${diff - 1} 夜`;
     };
 
-    /* ----------------- 小工具：天氣 icon map ----------------- */
     const WEATHER_ICON_MAP = [
       { codes: [0], icon: '☀️' },
       { codes: [1, 2, 3], icon: '⛅' },
@@ -1390,11 +1469,10 @@
       return found?.icon ?? '☁️';
     };
 
-    /* ----------------- Leaflet 變數 & geocode cache ----------------- */
     let mapInstance = null;
     let userMarker = null;
     let geoWatchId = null;
-    const geocodeCache = new Map(); // key: location string, value: { lat, lon }
+    const geocodeCache = new Map();
 
     const geocodeLocation = async (location) => {
       if (!location) return null;
@@ -1416,7 +1494,6 @@
 
     createApp({
       setup() {
-        /* ========== 基本狀態 ========== */
         const viewMode = ref('plan');
         const currentDayIdx = ref(0);
         const isOnline = ref(false);
@@ -1428,7 +1505,6 @@
         const timelineRef = ref(null);
         let sortable = null;
 
-        /* ========== 旅程清單 / 當前旅程 ========== */
         const showTripMenu = ref(false);
         const tripList = ref([]);
         const currentTripId = ref(null);
@@ -1439,6 +1515,8 @@
             days.value[currentDayIdx.value] || {
               items: [],
               flight: null,
+              stay: null,
+              travelExpanded: true,
               date: '',
               title: '',
             }
@@ -1451,40 +1529,31 @@
 
         const initSortable = () => {
           if (!timelineRef.value) return;
-
           if (sortable) {
             sortable.destroy();
             sortable = null;
           }
-
           sortable = new Sortable(timelineRef.value, {
             animation: 150,
             handle: '.drag-handle',
-            draggable: '.sortable-item',   // 只讓行程卡片可以拖曳
             ghostClass: 'bg-teal-50',
             onEnd(evt) {
               const oldIndex = evt.oldIndex;
               const newIndex = evt.newIndex;
               if (oldIndex === newIndex) return;
-
               const list = currentDay.value.items;
-              if (!list ||
-                  oldIndex < 0 ||
-                  newIndex < 0 ||
-                  oldIndex >= list.length ||
-                  newIndex >= list.length) {
+              if (!list || oldIndex < 0 || newIndex < 0 ||
+                  oldIndex >= list.length || newIndex >= list.length) {
                 return;
               }
-
               const [moved] = list.splice(oldIndex, 1);
               list.splice(newIndex, 0, moved);
             },
           });
         };
 
-        /* ========== 分享行程 ========== */
+        /* 分享 */
         const showShareModal = ref(false);
-
         const shareSummary = computed(() => {
           const trip = tripList.value.find(t => t.id === currentTripId.value) || null;
           const title =
@@ -1520,11 +1589,9 @@
         const openShareModal = () => {
           showShareModal.value = true;
         };
-
         const closeShareModal = () => {
           showShareModal.value = false;
         };
-
         const copyShare = async () => {
           try {
             await navigator.clipboard.writeText(shareJson.value);
@@ -1534,7 +1601,6 @@
             alert('複製失敗，請手動選取文字複製。');
           }
         };
-
         const systemShare = async () => {
           if (!navigator.share) {
             await copyShare();
@@ -1551,7 +1617,7 @@
           }
         };
 
-        /* ========== 分帳 / 成員 / 支出 ========== */
+        /* 分帳 */
         const expenses = ref([]);
         const newExpense = ref({ item: '', amount: '', payer: '我' });
         const participants = ref(['我']);
@@ -1677,7 +1743,7 @@
           });
         };
 
-        /* ========== 行前清單 ========== */
+        /* 清單 */
         const checklistSections = ref([
           {
             id: 'pretrip',
@@ -1818,7 +1884,7 @@
           checklistSections.value = checklistSections.value.filter(s => s.id !== sectionId);
         };
 
-        /* ========== 天氣 / 匯率 / 目的地 ========== */
+        /* 天氣 / 匯率 / 目的地 */
         const weather = ref({
           location: '',
           temp: null,
@@ -1972,14 +2038,12 @@
           }
         };
 
-        /* ========== 航班卡片 / 行程項目 ========== */
+        /* 航班 & 住宿 & 行程項目 */
         const toggleFlightCard = () => {
           const idx = currentDayIdx.value;
           const list = days.value;
           if (!list.length || idx < 0 || idx >= list.length) return;
-
-          const day = { ...list[idx] };
-
+          const day = list[idx];
           if (!day.flight) {
             day.flight = {
               startTime: '',
@@ -1993,7 +2057,38 @@
             if (!window.confirm('確定要刪除此日的航班資訊嗎？')) return;
             day.flight = null;
           }
-          list.splice(idx, 1, day);
+        };
+
+        const toggleStayCard = () => {
+          const idx = currentDayIdx.value;
+          const list = days.value;
+          if (!list.length || idx < 0 || idx >= list.length) return;
+          const day = list[idx];
+          if (!day.stay) {
+            day.stay = {
+              name: '',
+              address: '',
+              checkInTime: '',
+              checkOutTime: '',
+              note: '',
+            };
+          } else {
+            if (!window.confirm('確定要刪除此日的住宿資訊嗎？')) return;
+            day.stay = null;
+          }
+        };
+
+        const isTravelPanelOpen = computed(() => {
+          const d = currentDay.value;
+          if (!d) return true;
+          return d.travelExpanded !== false;
+        });
+
+        const toggleTravelPanel = () => {
+          const idx = currentDayIdx.value;
+          if (idx < 0 || idx >= days.value.length) return;
+          const d = days.value[idx];
+          d.travelExpanded = !(d.travelExpanded !== false);
         };
 
         const getDotColor = (type) => {
@@ -2002,23 +2097,19 @@
           return 'bg-teal-400';
         };
 
-        // 根據同一天相鄰兩個行程，開啟 Google Maps 導航
         const openGoogleRoute = (idx) => {
           const items = currentDay.value.items || [];
           if (idx <= 0 || idx >= items.length) {
             alert('至少需要兩個連續的行程才能導航');
             return;
           }
-
           const prev = items[idx - 1];
           const cur  = items[idx];
-
           if (!prev.location || !cur.location) {
             alert('請先填寫兩個地點的名稱或地址');
             return;
           }
-
-          let mode = 'driving'; // 預設開車
+          let mode = 'driving';
           switch (cur.transport) {
             case '走路':
               mode = 'walking';
@@ -2031,16 +2122,13 @@
               mode = 'driving';
               break;
           }
-
           const origin      = encodeURIComponent(prev.location);
           const destination = encodeURIComponent(cur.location);
-
           const url =
-            `https://www.google.com/maps/dir/?api=1` +
-            `&origin=${origin}` +
-            `&destination=${destination}` +
-            `&travelmode=${mode}`;
-
+              `https://www.google.com/maps/dir/?api=1` +
+              `&origin=${origin}` +
+              `&destination=${destination}` +
+              `&travelmode=${mode}`;
           window.open(url, '_blank');
         };
 
@@ -2067,13 +2155,15 @@
             title: '',
             items: [],
             flight: null,
+            stay: null,
+            travelExpanded: true,
           });
         };
 
         const removeCurrentDay = () => {
           if (
             days.value.length > 1 &&
-            window.confirm('確定要刪除這一天嗎？')
+            window.confirm('確定要刪除此一天嗎？')
           ) {
             days.value.splice(currentDayIdx.value, 1);
             if (currentDayIdx.value >= days.value.length)
@@ -2112,7 +2202,7 @@
           }
         };
 
-        /* ========== 編輯行程 Modal / 拖曳排序 ========== */
+        /* 編輯行程 Modal */
         const editModalVisible = ref(false);
         const editIndex = ref(null);
         const editForm = ref({
@@ -2180,7 +2270,7 @@
           editModalVisible.value = false;
         };
 
-        /* ========== Map / Geolocation ========== */
+        /* Map / Geolocation */
         const isMapLoading = ref(false);
         const userLocation = ref(null);
 
@@ -2289,7 +2379,7 @@
           }
         };
 
-        /* ========== 匯入行程 ========== */
+        /* 匯入行程 */
         const showImportModal = ref(false);
         const importText = ref('');
 
@@ -2369,7 +2459,7 @@
           alert('已匯入行程並建立新的旅程。');
         };
 
-        /* ========== 旅程初始化 / 切換 / 刪除 ========== */
+        /* 旅程初始化 / 切換 / 刪除 */
         const initTrip = () => {
           days.value = [];
           const total = setup.value.daysCount || 3;
@@ -2395,6 +2485,8 @@
                 title: '',
                 items: [],
                 flight: null,
+                stay: null,
+                travelExpanded: true,
               });
             }
           } else {
@@ -2405,6 +2497,8 @@
                 title: '',
                 items: [],
                 flight: null,
+                stay: null,
+                travelExpanded: true,
               });
             }
           }
@@ -2566,7 +2660,6 @@
           editingTripId.value  = null;
         };
 
-        /* ========== 旅程日期顯示 ========== */
         const daysToTrip = computed(() =>
           calcTripDays(
             setup.value.startDate,
@@ -2581,7 +2674,6 @@
           )
         );
 
-        /* ========== Watchers ========== */
         watch(
           [days, expenses, exchangeRate, participants],
           () => {
@@ -2631,7 +2723,6 @@
           }
         });
 
-        /* ========== onMounted ========== */
         onMounted(() => {
           isOnline.value = navigator.onLine;
           window.addEventListener(
@@ -2658,9 +2749,7 @@
           }
         });
 
-        /* ========== 回傳狀態 / 方法 ========== */
         return {
-          // 主狀態
           viewMode,
           currentDayIdx,
           days,
@@ -2668,7 +2757,6 @@
           isOnline,
           timelineRef,
 
-          // 旅程管理
           showTripMenu,
           tripList,
           currentTripId,
@@ -2681,7 +2769,6 @@
           tripDateRange,
           daysToTrip,
 
-          // 行程與航班
           addDay,
           addItem,
           removeItem,
@@ -2690,8 +2777,10 @@
           getTimePeriod,
           updateDate,
           toggleFlightCard,
+          toggleStayCard,
+          isTravelPanelOpen,
+          toggleTravelPanel,
 
-          // 編輯行程 Modal
           editModalVisible,
           editIndex,
           editForm,
@@ -2700,7 +2789,6 @@
           closeEditModal,
           saveEdit,
 
-          // 分帳
           expenses,
           newExpense,
           participants,
@@ -2718,7 +2806,6 @@
           currencyLabel,
           currencySymbol,
 
-          // 清單
           checklistSections,
           checklistStats,
           sectionProgress,
@@ -2727,7 +2814,6 @@
           addChecklistSection,
           removeChecklistSection,
 
-          // 天氣 / 匯率
           weather,
           weatherDisplay,
           getWeatherIcon,
@@ -2740,13 +2826,11 @@
           saveTripEdit,
           cancelSetup,
 
-          // 地圖
           isMapLoading,
           userLocation,
           initMap,
           centerOnUser,
 
-          // 分享
           showShareModal,
           shareSummary,
           shareJson,
@@ -2755,7 +2839,6 @@
           copyShare,
           systemShare,
 
-          // 匯入
           showImportModal,
           importText,
           openImportModal,
